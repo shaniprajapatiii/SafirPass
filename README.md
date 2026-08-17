@@ -1,0 +1,1 @@
+## AI-Powered Smart Tourist Digital Identity, Safety & Incident Response System
