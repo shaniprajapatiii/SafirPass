@@ -15,15 +15,6 @@ export default function DigitalIdPage() {
   const [kyc, setKyc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [keys, setKeys] = useState(DEFAULT_KEYS);
-  const [timeSalt, setTimeSalt] = useState(Math.floor(Date.now() / 30000));
-
-  useEffect(() => {
-    // 30-second TOTP rotation ticker
-    const timer = setInterval(() => {
-      setTimeSalt(Math.floor(Date.now() / 30000));
-    }, 10000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -56,9 +47,8 @@ export default function DigitalIdPage() {
 
   const share = useMemo(() => {
     if (!activeKyc) return null;
-    const baseShare = buildShare(activeKyc, keys);
-    return { ...baseShare, t: timeSalt };
-  }, [activeKyc, keys, timeSalt]);
+    return buildShare(activeKyc, keys);
+  }, [activeKyc, keys]);
 
   const token = useMemo(() => (share ? encodeShare(share) : ""), [share]);
 
@@ -108,7 +98,6 @@ export default function DigitalIdPage() {
       <div className="min-h-screen bg-slate-50 py-10 px-4 flex items-center justify-center">
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-md animate-pulse">
           <QrCode className="mx-auto size-8 text-blue-600 animate-spin" />
-          <p className="mt-3 text-sm font-bold text-slate-700">Loading verified credential from Supabase...</p>
         </div>
       </div>
     );
@@ -142,12 +131,12 @@ export default function DigitalIdPage() {
         {/* Top Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm print:hidden">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Part 3 &amp; 4 Dynamic Credential</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Selective Disclosure Digital ID</span>
             <h1 className="font-serif text-2xl font-bold text-slate-900">
               Authority Digital Tourist ID
             </h1>
             <p className="text-xs text-slate-500 mt-1">
-              Tourist ID: <span className="font-mono font-bold text-slate-900">{activeKyc.tourist_id}</span> · Real Supabase Record
+              Tourist ID: <span className="font-mono font-bold text-slate-900">{activeKyc.tourist_id}</span> · Updates dynamically based on selected attributes
             </p>
           </div>
 
@@ -172,9 +161,9 @@ export default function DigitalIdPage() {
           {/* Attributes Disclosed Checklist */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
             <div className="space-y-1">
-              <h3 className="text-sm font-bold text-slate-900">Granular Attribute Disclosures</h3>
+              <h3 className="text-sm font-bold text-slate-900">Selective Information Disclosure</h3>
               <p className="text-xs text-slate-500">
-                Untick attributes that verifiers do not need. The codes update in real time.
+                Check or uncheck information fields below. Your QR code will update in real time to encode only what you choose to share.
               </p>
             </div>
 
@@ -204,13 +193,13 @@ export default function DigitalIdPage() {
             </div>
           </div>
 
-          {/* Dynamic Rotating QR & Barcode Showcase */}
+          {/* Dynamic QR & Barcode Showcase */}
           <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm space-y-6 flex flex-col justify-between">
             <div className="flex flex-col sm:flex-row items-center justify-around gap-8">
-              {/* Rotating QR */}
+              {/* Dynamic QR */}
               <div className="text-center space-y-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-600">30s TOTP Rotating QR</span>
-                <QrGraphic value={shareUrl || code128} size={210} showTimer={true} />
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Selective Disclosure Dynamic QR</span>
+                <QrGraphic value={shareUrl || code128} size={210} showTimer={false} />
               </div>
 
               {/* Code 128 Barcode */}
@@ -228,7 +217,7 @@ export default function DigitalIdPage() {
             <div className="rounded-xl bg-slate-50 p-4 border border-slate-200 text-xs text-slate-600 flex items-center gap-3">
               <Smartphone className="size-5 text-blue-600 shrink-0" />
               <span>
-                Cryptographic signatures are recalculated every 30 seconds to prevent screenshot reuse and credential theft.
+                Your QR code updates immediately based on the selected attributes, allowing you to share only the minimum required details for verification.
               </span>
             </div>
           </div>
