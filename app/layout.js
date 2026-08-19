@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "SafirPass — AI-Powered Smart Tourist Identity, Safety & Incident Response System",
-  description: "SafirPass is a privacy-first digital tourist identity platform for India & globally: verified e-KYC, rotating QR credentials, PostGIS safety geofencing and automated emergency dispatch.",
+  description: "SafirPass is a privacy-first digital tourist identity platform for India & globally: verified e-KYC, selective disclosure QR credentials, PostGIS safety geofencing and automated emergency dispatch.",
   openGraph: {
     title: "SafirPass — Smart Tourist Identity Grid",
     description: "Verify once, travel freely across trusted services. Digital Tourist ID, consent-controlled data sharing and rapid incident response.",

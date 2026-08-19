@@ -199,7 +199,7 @@ export default function DigitalIdPage() {
               {/* Dynamic QR */}
               <div className="text-center space-y-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-blue-600">Selective Disclosure Dynamic QR</span>
-                <QrGraphic value={shareUrl || code128} size={210} showTimer={false} />
+                <QrGraphic value={shareUrl || code128} size={210} showStatus={true} showBadge={true} />
               </div>
 
               {/* Code 128 Barcode */}
@@ -255,7 +255,7 @@ export default function DigitalIdPage() {
               </div>
 
               <div className="rounded-xl bg-white p-3 shadow-md shrink-0">
-                <QrGraphic value={shareUrl || code128} size={140} showTimer={false} />
+                <QrGraphic value={shareUrl || code128} size={140} showStatus={false} showBadge={false} />
               </div>
             </div>
 

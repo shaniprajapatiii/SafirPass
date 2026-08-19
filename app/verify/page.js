@@ -85,7 +85,7 @@ function VerifyContent() {
           <XCircle className="mx-auto size-12 text-red-600" />
           <h2 className="text-xl font-bold text-slate-900">INVALID OR EXPIRED CREDENTIAL</h2>
           <p className="text-xs text-slate-600 leading-relaxed">
-            This QR code or token payload could not be verified. It may have expired (30s rotation limit), been tampered with, or revoked.
+            This QR code or token payload could not be verified. It may have expired, been tampered with, or revoked.
           </p>
         </div>
       ) : (

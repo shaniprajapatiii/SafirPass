@@ -27,9 +27,9 @@ export default function TechnologyPage() {
             <div className="flex size-14 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
               <QrCode className="size-7" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900">Time-Based Rotating Payload (TRP)</h3>
+            <h3 className="text-xl font-bold text-slate-900">Selective Disclosure Dynamic QR</h3>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Similar to TOTP two-factor authentication, SafirPass generates dynamic QR credentials that recalculate their cryptographic signature every 30 to 60 seconds. A stolen screenshot or printed photo becomes instantly invalid after the time window expires.
+              SafirPass generates dynamic QR credentials with selective attribute disclosure. Cryptographic payload signatures recalculate in real time based on user-approved fields, preventing raw document exposure while ensuring verifiers get tamper-proof data.
             </p>
           </div>
 

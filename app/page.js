@@ -33,8 +33,8 @@ const PILLARS = [
   },
   {
     icon: <QrCode className="size-6 text-blue-600" />,
-    title: "Time-Based Rotating QR (TRP)",
-    body: "Dynamic QR payloads refresh every 30 seconds (TOTP style). Screenshots or static photocopies render completely useless, preventing identity theft.",
+    title: "Selective Disclosure Dynamic QR",
+    body: "Dynamic QR payloads encode only your chosen attribute fields in real time using cryptographic signatures. Share required details without exposing raw passport or document records.",
   },
   {
     icon: <Blocks className="size-6 text-blue-600" />,
@@ -56,7 +56,7 @@ const PILLARS = [
 const STATS = [
   { value: "1363", label: "24×7 Multilingual Tourist Helpline" },
   { value: "112", label: "National Emergency Response Number" },
-  { value: "30s", label: "Cryptographic credential rotation" },
+  { value: "100%", label: "Selective attribute control" },
   { value: "0", label: "Personal records written on-chain" },
 ];
 
@@ -108,7 +108,7 @@ export default function HomePage() {
               <p className="text-base text-slate-600 md:text-lg leading-relaxed max-w-xl">
                 SafirPass transforms international travel by replacing redundant
                 passport photocopies with a privacy-first Digital Tourist ID —
-                backed by authority e-KYC, 30-second rotating QR credentials,
+                backed by authority e-KYC, selective disclosure QR credentials,
                 and an AI-assisted emergency dispatch grid.
               </p>
 
@@ -179,7 +179,7 @@ export default function HomePage() {
                       Dynamic Credentials
                     </p>
                     <p className="text-sm font-bold text-slate-900">
-                      30s Rotating QR Active
+                      Selective Disclosure Active
                     </p>
                   </div>
                 </div>

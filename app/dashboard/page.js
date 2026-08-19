@@ -157,7 +157,7 @@ export default function DashboardPage() {
             <div>
               <h3 className="text-base font-bold text-slate-900">Digital Tourist ID &amp; Dynamic QR</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Time-based 30s rotating QR code, Code 128 barcode, and printable identity card.
+                Selective disclosure dynamic QR code, Code 128 barcode, and printable identity card.
               </p>
             </div>
           </Link>

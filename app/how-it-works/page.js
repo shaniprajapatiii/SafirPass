@@ -3,7 +3,7 @@ import { ScanFace, FileText, ShieldCheck, QrCode, Lock, ArrowRight, CheckCircle2
 
 export const metadata = {
   title: "How It Works — SafirPass Digital Identity Verification",
-  description: "Learn how SafirPass extracts passport OCR, verifies face liveness, generates dynamic rotating QR codes, and secures data with zero-knowledge proofs.",
+  description: "Learn how SafirPass extracts passport OCR, verifies face liveness, generates dynamic selective disclosure QR credentials, and secures data with zero-knowledge proofs.",
 };
 
 export default function HowItWorksPage() {
@@ -25,8 +25,8 @@ export default function HowItWorksPage() {
     },
     {
       icon: <QrCode className="size-8 text-blue-600" />,
-      title: "4. Dynamic Rotating QR (TRP)",
-      body: "Instead of static screenshots or paper copies, SafirPass generates a dynamic QR code that refreshes every 30 seconds. Scanning verifiers receive signed cryptographic payloads that prove validity without exposing raw document files.",
+      title: "4. Selective Disclosure Dynamic QR",
+      body: "Instead of sharing static screenshots or paper copies, SafirPass generates a dynamic QR code encoding only your selected identity attributes in real time. Verifiers receive signed cryptographic payloads that prove validity without exposing raw document files.",
     },
   ];
 
