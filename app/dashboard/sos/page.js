@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Siren, MapPin, PhoneCall, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
 import { supabase } from "../../../lib/supabase";
+import { toValidUuid } from "../../../lib/uuid";
 
 export default function SosPanicPage() {
   const { user } = useAuth();
@@ -57,7 +58,7 @@ export default function SosPanicPage() {
     try {
       if (user?.id) {
         const { error } = await supabase.from("sos_alerts").insert({
-          user_id: user.id,
+          user_id: toValidUuid(user.id),
           category,
           latitude: lat,
           longitude: lng,

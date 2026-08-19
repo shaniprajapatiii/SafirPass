@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ShieldCheck, Building2, Smartphone, Shield, CheckCircle2, XCircle, Plus, Sparkles, Loader2 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
 import { supabase } from "../../../lib/supabase";
+import { toValidUuid } from "../../../lib/uuid";
 import { ConsentModal } from "../../../components/ConsentModal";
 
 export default function ConsentEnginePage() {
@@ -85,7 +86,7 @@ export default function ConsentEnginePage() {
 
     try {
       const { data, error } = await supabase.from("consent_requests").insert({
-        user_id: user.id,
+        user_id: toValidUuid(user.id),
         requester: requesterName,
         requester_type: requesterType,
         attributes: defaultAttributes,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { signJwt } from "@/lib/jwt";
+import { toValidUuid } from "@/lib/uuid";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -56,7 +57,8 @@ export async function GET(request) {
       };
     }
 
-    const userId = googleUser.id || `usr-${Date.now()}`;
+    const rawId = googleUser.id || googleUser.email || `usr-${Date.now()}`;
+    const userId = toValidUuid(rawId);
 
     // Upsert user profile into Supabase PostgreSQL
     try {

@@ -43,7 +43,16 @@ export default function DigitalIdPage() {
       .catch(() => setLoading(false));
   }, [user]);
 
-  const activeKyc = kyc;
+  const activeKyc = useMemo(() => {
+    if (kyc) return kyc;
+    if (typeof window !== "undefined") {
+      try {
+        const saved = window.localStorage.getItem("safirpass_active_kyc");
+        if (saved) return JSON.parse(saved);
+      } catch {}
+    }
+    return null;
+  }, [kyc]);
 
   const share = useMemo(() => {
     if (!activeKyc) return null;

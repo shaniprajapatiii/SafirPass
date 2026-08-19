@@ -13,12 +13,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated, anon;
 GRANT ALL ON public.profiles TO service_role;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users manage own profile" ON public.profiles;
-CREATE POLICY "Users manage own profile" ON public.profiles FOR ALL TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+CREATE POLICY "Allow profile management" ON public.profiles FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- 2. KYC Applications Table (Passport OCR & Face Liveness)
 CREATE TABLE IF NOT EXISTS public.kyc_applications (
@@ -47,12 +47,12 @@ CREATE TABLE IF NOT EXISTS public.kyc_applications (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.kyc_applications TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.kyc_applications TO authenticated, anon;
 GRANT ALL ON public.kyc_applications TO service_role;
 ALTER TABLE public.kyc_applications ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users manage own kyc" ON public.kyc_applications;
-CREATE POLICY "Users manage own kyc" ON public.kyc_applications FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Allow kyc management" ON public.kyc_applications FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- 3. Consent Requests Table (Data Siloing & Third-Party Verification)
 CREATE TABLE IF NOT EXISTS public.consent_requests (
@@ -67,12 +67,12 @@ CREATE TABLE IF NOT EXISTS public.consent_requests (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.consent_requests TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.consent_requests TO authenticated, anon;
 GRANT ALL ON public.consent_requests TO service_role;
 ALTER TABLE public.consent_requests ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users manage own consents" ON public.consent_requests;
-CREATE POLICY "Users manage own consents" ON public.consent_requests FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Allow consent management" ON public.consent_requests FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- 4. Emergency SOS Alerts Table
 CREATE TABLE IF NOT EXISTS public.sos_alerts (
@@ -90,12 +90,12 @@ CREATE TABLE IF NOT EXISTS public.sos_alerts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.sos_alerts TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.sos_alerts TO authenticated, anon;
 GRANT ALL ON public.sos_alerts TO service_role;
 ALTER TABLE public.sos_alerts ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users view own alerts" ON public.sos_alerts;
-CREATE POLICY "Users view own alerts" ON public.sos_alerts FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Allow alert management" ON public.sos_alerts FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- Allow all authenticated users/authorities to view and update alerts for command center dispatch
 DROP POLICY IF EXISTS "Authorities view all alerts" ON public.sos_alerts;

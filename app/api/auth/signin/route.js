@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { signJwt } from "@/lib/jwt";
+import { toValidUuid } from "@/lib/uuid";
 
 export async function POST(request) {
   try {
@@ -16,7 +17,7 @@ export async function POST(request) {
       .eq("email", email)
       .maybeSingle();
 
-    const userId = profile?.id || `usr-${Date.now()}`;
+    const userId = profile?.id || toValidUuid(email);
     const fullName = profile?.full_name || email.split("@")[0];
 
     if (!profile) {

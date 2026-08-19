@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { signJwt } from "@/lib/jwt";
+import { toValidUuid } from "@/lib/uuid";
 
 export async function POST(request) {
   try {
@@ -10,7 +11,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Email and password required" }, { status: 400 });
     }
 
-    const userId = `usr-${Date.now()}`;
+    const userId = toValidUuid(email);
 
     try {
       await supabase.from("profiles").insert({
