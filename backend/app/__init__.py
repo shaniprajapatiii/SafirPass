@@ -1,0 +1,1 @@
+"""Tourist Safety API package."""
