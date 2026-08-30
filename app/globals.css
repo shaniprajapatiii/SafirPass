@@ -17,8 +17,20 @@
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #1e40af;
-  --radius: 0.5rem;
+  --ring: #2563eb;
+  --radius: 0.75rem;
+
+  /* Brand Palette (Government-grade Trust + FinTech Polish) */
+  --safir-navy: #090d16;
+  --safir-indigo: #1e40af;
+  --safir-blue: #2563eb;
+  --safir-blue-glow: rgba(37, 99, 235, 0.45);
+  --safir-saffron: #f59e0b;
+  --safir-saffron-glow: rgba(245, 158, 11, 0.45);
+  --safir-emerald: #10b981;
+  --safir-emerald-glow: rgba(16, 185, 129, 0.45);
+  --safir-crimson: #ef4444;
+  --safir-crimson-glow: rgba(239, 68, 68, 0.55);
 }
 
 @theme inline {
@@ -41,8 +53,16 @@
   --color-ring: var(--ring);
 }
 
+/* Base resets & typography */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html {
   scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -50,25 +70,317 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
-/* Custom scrollbars */
+/* ==========================================================================
+   BUTTON BORDER LIGHTING & GLOW ON HOVER
+   ========================================================================== */
+
+/* Universal interactive button styling with transition */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+.btn,
+a[class*="bg-blue"],
+a[class*="bg-slate"],
+a[class*="bg-emerald"],
+a[class*="bg-red"],
+a[class*="bg-amber"],
+a[class*="bg-indigo"],
+a[class*="bg-purple"],
+a[class*="rounded-xl"][class*="px-"],
+a[class*="rounded-lg"][class*="px-"],
+a[class*="rounded-2xl"][class*="px-"],
+a[class*="rounded-full"][class*="px-"] {
+  position: relative;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow, border-color;
+  backface-visibility: hidden;
+}
+
+/* 1. Primary & Blue Buttons: Luminous Cyan/Blue Border Lighting */
+button:hover:not(:disabled),
+[role="button"]:hover,
+input[type="button"]:hover:not(:disabled),
+input[type="submit"]:hover:not(:disabled),
+.btn:hover,
+a[class*="bg-blue-600"]:hover,
+a[class*="bg-blue-700"]:hover,
+a[class*="bg-blue-500"]:hover,
+a[class*="bg-indigo-600"]:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 
+    0 0 0 1.5px rgba(59, 130, 246, 0.95),
+    0 0 20px 4px rgba(59, 130, 246, 0.5),
+    0 6px 20px -2px rgba(37, 99, 235, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  border-color: rgba(147, 197, 253, 0.9) !important;
+}
+
+/* 2. Red & Emergency SOS Buttons: Urgent Radiant Crimson Border Lighting */
+button[class*="bg-red"]:hover:not(:disabled),
+a[class*="bg-red"]:hover,
+button[class*="text-red"]:hover:not(:disabled),
+.btn-emergency:hover,
+.btn-danger:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 
+    0 0 0 2px rgba(239, 68, 68, 0.95),
+    0 0 26px 6px rgba(239, 68, 68, 0.6),
+    0 6px 22px -2px rgba(220, 38, 38, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-color: rgba(254, 202, 202, 0.95) !important;
+}
+
+/* 3. Emerald & Verified Buttons: Luminous Mint/Emerald Border Lighting */
+button[class*="bg-emerald"]:hover:not(:disabled),
+button[class*="bg-green"]:hover:not(:disabled),
+a[class*="bg-emerald"]:hover,
+a[class*="bg-green"]:hover,
+.btn-success:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 
+    0 0 0 1.5px rgba(16, 185, 129, 0.95),
+    0 0 22px 4px rgba(16, 185, 129, 0.55),
+    0 6px 20px -2px rgba(5, 150, 105, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  border-color: rgba(167, 243, 208, 0.95) !important;
+}
+
+/* 4. Amber, Saffron & Helpline Buttons: Warm Luminous Gold Border Lighting */
+button[class*="bg-amber"]:hover:not(:disabled),
+button[class*="bg-orange"]:hover:not(:disabled),
+a[class*="bg-amber"]:hover,
+a[class*="border-amber"]:hover,
+a[class*="bg-orange"]:hover,
+.btn-warning:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 
+    0 0 0 1.5px rgba(245, 158, 11, 0.95),
+    0 0 22px 4px rgba(245, 158, 11, 0.55),
+    0 6px 18px -2px rgba(217, 119, 6, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  border-color: rgba(253, 230, 138, 0.95) !important;
+}
+
+/* 5. Dark Slate / Midnight / Government Command Buttons: Electric Holographic Border Lighting */
+button[class*="bg-slate-900"]:hover:not(:disabled),
+button[class*="bg-slate-800"]:hover:not(:disabled),
+button[class*="bg-black"]:hover:not(:disabled),
+a[class*="bg-slate-900"]:hover,
+a[class*="bg-slate-800"]:hover,
+a[class*="bg-black"]:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 
+    0 0 0 1.5px rgba(96, 165, 250, 0.85),
+    0 0 24px 4px rgba(59, 130, 246, 0.45),
+    0 8px 24px -2px rgba(15, 23, 42, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: rgba(147, 197, 253, 0.85) !important;
+}
+
+/* 6. Outline, Light, White & Secondary Action Buttons: Crisp Azure Border Lighting */
+button[class*="bg-white"]:hover:not(:disabled),
+button[class*="bg-slate-50"]:hover:not(:disabled),
+button[class*="bg-slate-100"]:hover:not(:disabled),
+button[class*="border-slate"]:hover:not(:disabled),
+a[class*="bg-white"]:hover,
+a[class*="border-slate-300"]:hover,
+a[class*="border-slate-200"]:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 
+    0 0 0 1.5px rgba(59, 130, 246, 0.85),
+    0 0 18px 3px rgba(59, 130, 246, 0.35),
+    0 6px 16px -2px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border-color: rgba(59, 130, 246, 0.7) !important;
+}
+
+/* Tactile Active state for all buttons */
+button:active:not(:disabled),
+[role="button"]:active,
+input[type="button"]:active:not(:disabled),
+input[type="submit"]:active:not(:disabled),
+a[class*="rounded-xl"][class*="px-"]:active,
+a[class*="rounded-lg"][class*="px-"]:active {
+  transform: translateY(0.5px) scale(0.985) !important;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.7), 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Disabled state */
+button:disabled,
+button[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================================================
+   FORM INPUTS FOCUS GLOW LIGHTING
+   ========================================================================== */
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+textarea,
+select {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+textarea:focus,
+select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 
+    0 0 0 3px rgba(59, 130, 246, 0.22),
+    0 0 16px 1px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* ==========================================================================
+   CARDS, PANELS & GLASSMORPHIC ELEVATIONS
+   ========================================================================== */
+
+/* Modern card shadow */
+.shadow-card {
+  box-shadow: 
+    0 1px 3px 0 rgba(15, 23, 42, 0.04),
+    0 8px 24px -4px rgba(15, 23, 42, 0.06),
+    0 0 0 1px rgba(226, 232, 240, 0.8);
+}
+
+.shadow-card-hover {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shadow-card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 0 0 1px rgba(59, 130, 246, 0.3),
+    0 16px 36px -6px rgba(15, 23, 42, 0.1),
+    0 4px 16px -2px rgba(59, 130, 246, 0.08);
+}
+
+/* High-tech glass card panel */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+}
+
+.glass-panel-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(51, 65, 85, 0.7);
+}
+
+/* ==========================================================================
+   ANIMATIONS & RADAR / EMERGENCY PULSE UTILITIES
+   ========================================================================== */
+
+@keyframes pulseGlow {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.4));
+  }
+  50% { 
+    opacity: 0.8; 
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 16px rgba(59, 130, 246, 0.7));
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulseGlow 3.5s infinite ease-in-out;
+}
+
+/* Radar scanning sweep animation */
+@keyframes radarSweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-radar-sweep {
+  animation: radarSweep 4s linear infinite;
+  transform-origin: center center;
+}
+
+/* Emergency Crisis Strobe */
+@keyframes emergencyBeacon {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 0 rgba(239, 68, 68, 0.7),
+      0 0 20px 4px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 12px rgba(239, 68, 68, 0),
+      0 0 35px 8px rgba(239, 68, 68, 0.7);
+  }
+}
+
+.animate-emergency-beacon {
+  animation: emergencyBeacon 1.8s infinite ease-out;
+}
+
+/* Subtle Shimmer */
+@keyframes shimmerWave {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, #1e40af 0%, #3b82f6 30%, #60a5fa 50%, #3b82f6 70%, #1e40af 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmerWave 4s linear infinite;
+}
+
+/* ==========================================================================
+   SCROLLBAR & SELECTION
+   ========================================================================== */
+
+::selection {
+  background-color: #dbeafe;
+  color: #1e3a8a;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: #f8fafc;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 4px;
+  border-radius: 9999px;
+  border: 2px solid #f8fafc;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Utility container */
+/* Container page layout helper */
 .container-page {
   width: 100%;
   max-width: 1280px;
@@ -78,29 +390,23 @@ body {
   padding-right: 1.25rem;
 }
 
-/* Glassmorphic card styling */
-.shadow-card {
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+@media (min-width: 640px) {
+  .container-page {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
 }
 
-.shadow-card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.shadow-card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.1), 0 4px 12px -2px rgba(15, 23, 42, 0.05);
-}
-
-/* Animation utilities */
-@keyframes pulseGlow {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.05); }
+@media (min-width: 1024px) {
+  .container-page {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }
 
-.animate-pulse-slow {
-  animation: pulseGlow 3s infinite ease-in-out;
-}
-
+/* ==========================================================================
+   PRINT STYLES
+   ========================================================================== */
 @media print {
   body {
     background: white !important;
