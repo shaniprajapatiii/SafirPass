@@ -8,6 +8,7 @@ import { toValidUuid } from "../../../lib/uuid";
 
 export default function SosPanicPage() {
   const { user } = useAuth();
+  const [kyc, setKyc] = useState(null);
   const [category, setCategory] = useState("medical");
   const [notes, setNotes] = useState("");
   const [holding, setHolding] = useState(0);
@@ -17,6 +18,16 @@ export default function SosPanicPage() {
   const [transmitted, setTransmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const timer = useRef(null);
+
+  useEffect(() => {
+    fetch("/api/kyc/status")
+      .then((res) => res.json())
+      .then((data) => setKyc(data?.kyc || null))
+      .catch(() => {});
+  }, [user]);
+
+  const isVerified = kyc?.status === "verified";
+
 
   const loadAlerts = useCallback(async () => {
     if (!user?.id) return;
@@ -104,9 +115,50 @@ export default function SosPanicPage() {
 
   useEffect(() => () => stopHold(), []);
 
+  if (!isVerified) {
+    return (
+      <div className="min-h-screen bg-slate-50 py-16 px-4">
+        <div className="container-page max-w-xl space-y-6 text-center">
+          <div className="rounded-3xl border-2 border-amber-300 bg-white p-10 shadow-xl space-y-6">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
+              <Siren className="size-8" />
+            </div>
+            <div className="space-y-2">
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+                Authority Verification Required
+              </span>
+              <h1 className="font-serif text-2xl font-bold text-slate-900">
+                SOS Emergency Dispatch is Locked
+              </h1>
+              <p className="text-sm text-slate-600">
+                To route high-priority emergency telemetry to National 112 control units, your digital identity must be verified by the Government Authority.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <a
+                href="/dashboard/verify"
+                className="rounded-xl bg-blue-600 px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition-colors"
+              >
+                Go to e-KYC Verification
+              </a>
+              <a
+                href="/dashboard"
+                className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              >
+                Back to Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="container-page max-w-4xl space-y-8">
+
         {/* Header */}
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 md:p-8 space-y-2">
           <span className="text-xs font-bold uppercase tracking-wider text-red-700 flex items-center gap-1.5">

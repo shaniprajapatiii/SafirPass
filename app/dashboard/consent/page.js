@@ -9,6 +9,7 @@ import { ConsentModal } from "../../../components/ConsentModal";
 
 export default function ConsentEnginePage() {
   const { user } = useAuth();
+  const [kyc, setKyc] = useState(null);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeModalRequest, setActiveModalRequest] = useState(null);
@@ -18,6 +19,16 @@ export default function ConsentEnginePage() {
   const [requesterName, setRequesterName] = useState("Taj Palace Hotel, New Delhi");
   const [requesterType, setRequesterType] = useState("hotel");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/kyc/status")
+      .then((res) => res.json())
+      .then((data) => setKyc(data?.kyc || null))
+      .catch(() => {});
+  }, [user]);
+
+  const isVerified = kyc?.status === "verified";
+
 
   const loadRequests = async () => {
     if (!user?.id) {
@@ -104,6 +115,46 @@ export default function ConsentEnginePage() {
       setSubmitting(false);
     }
   };
+
+  if (!isVerified) {
+    return (
+      <div className="min-h-screen bg-slate-50 py-16 px-4">
+        <div className="container-page max-w-xl space-y-6 text-center">
+          <div className="rounded-3xl border-2 border-amber-300 bg-white p-10 shadow-xl space-y-6">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
+              <Building2 className="size-8" />
+            </div>
+            <div className="space-y-2">
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+                Authority Verification Required
+              </span>
+              <h1 className="font-serif text-2xl font-bold text-slate-900">
+                Hotel &amp; SIM Consent Engine is Locked
+              </h1>
+              <p className="text-sm text-slate-600">
+                Granular selective attribute sharing for hotel check-ins and telecom SIM kiosks unlocks after your digital identity is approved by the Government Authority.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <a
+                href="/dashboard/verify"
+                className="rounded-xl bg-blue-600 px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition-colors"
+              >
+                Go to e-KYC Verification
+              </a>
+              <a
+                href="/dashboard"
+                className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              >
+                Back to Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
