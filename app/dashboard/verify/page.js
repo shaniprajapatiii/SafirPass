@@ -707,8 +707,84 @@ export default function VerificationPortalPage() {
   }
 
   // -------------------------------------------------------------
-  // STATE C: NEW REGISTRATION & VERIFICATION WIZARD
+  // STATE C: EXISTING KYC REJECTED (With Document Failure Feedback)
   // -------------------------------------------------------------
+  if (existingKyc && existingKyc.status === "rejected") {
+    return (
+      <div className="min-h-screen bg-slate-50 py-10 px-4">
+        <div className="container-page max-w-3xl space-y-8">
+          <div className="rounded-3xl border-2 border-red-300 bg-white p-8 md:p-10 shadow-xl space-y-8">
+            <div className="flex items-center gap-4">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-red-100 text-red-700 shadow-inner">
+                <XCircle className="size-8 text-red-600" />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-red-700">
+                  Authority Action Required
+                </span>
+                <h1 className="font-serif text-2xl font-extrabold text-slate-900">
+                  Verification Declined / Documents Flagged
+                </h1>
+              </div>
+            </div>
+
+            {/* Officer Remarks Alert */}
+            <div className="rounded-2xl bg-red-50 border border-red-200 p-5 space-y-3">
+              <h3 className="text-sm font-bold text-red-950 flex items-center gap-2">
+                <AlertTriangle className="size-4 text-red-700" /> Official Officer Remarks:
+              </h3>
+              <p className="text-xs text-red-800 leading-relaxed font-medium">
+                {existingKyc.admin_notes || "One or more uploaded documents could not be verified by the authority. Please re-upload clean and complete scans."}
+              </p>
+            </div>
+
+            {/* Document Breakdown */}
+            {Array.isArray(existingKyc.documents) && existingKyc.documents.some((d) => d.status === "failed") && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                  Flagged Documents Requiring Attention:
+                </h4>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {existingKyc.documents
+                    .filter((d) => d.status === "failed")
+                    .map((d, i) => (
+                      <div key={i} className="rounded-2xl border border-red-200 bg-red-50/50 p-4 space-y-1 text-xs">
+                        <span className="font-bold text-red-900 capitalize">{d.doc_type.replace(/_/g, " ")}</span>
+                        <p className="text-red-700 text-[11px] font-medium">
+                          Issue: {d.failure_reason || "Unreadable or invalid document scan"}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
+              <Link
+                href="/dashboard"
+                className="w-full sm:w-auto text-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              >
+                Back to Dashboard
+              </Link>
+
+              <button
+                onClick={() => setExistingKyc(null)}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-xs font-bold text-white shadow-lg hover:bg-blue-700 transition-colors"
+              >
+                <span>Re-Upload Documents &amp; Resubmit</span>
+                <ArrowRight className="size-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // STATE D: NEW REGISTRATION & VERIFICATION WIZARD
+  // -------------------------------------------------------------
+
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="container-page max-w-3xl space-y-8">

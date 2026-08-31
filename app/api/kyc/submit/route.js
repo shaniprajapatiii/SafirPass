@@ -25,11 +25,12 @@ export async function POST(request) {
       userId,
       profile: {
         ...profile,
-        email: profile.email || session?.email || "tourist@example.com",
+        email: profile.email || session?.email || "",
       },
       documents: documents || {},
       biometrics: biometrics || {},
     });
+
 
     return NextResponse.json(result);
   } catch (err) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyJwt } from "@/lib/jwt";
-import { getAdminApplicationsQueue, processAdminKycDecision, } from "@/lib/db/kyc-store";
+import { getAdminApplicationsQueue, processAdminKycDecision } from "@/lib/db/kyc-store";
+import { getAuthorityAuditLogs } from "@/lib/db/mongodb";
 
 export async function GET(request) {
   try {
@@ -12,8 +13,16 @@ export async function GET(request) {
       // Allow fallback if called during local development session or authority view
     }
 
-    const applications = await getAdminApplicationsQueue();
-    return NextResponse.json({ success: true, applications });
+    const [applications, auditLogs] = await Promise.all([
+      getAdminApplicationsQueue(),
+      getAuthorityAuditLogs(50),
+    ]);
+
+    return NextResponse.json({
+      success: true,
+      applications,
+      auditLogs: auditLogs || [],
+    });
   } catch (err) {
     return NextResponse.json(
       { error: err.message || "Failed to fetch KYC queue" },
@@ -22,13 +31,14 @@ export async function GET(request) {
   }
 }
 
+
 export async function POST(request) {
   try {
     const cookieHeader = request.cookies.get("safirpass_session");
     const token = cookieHeader?.value;
     const session = token ? await verifyJwt(token) : null;
 
-    const { userId, decision, notes } = await request.json();
+    const { userId, decision, notes, documentDecisions = {}, failedDocs = [] } = await request.json();
 
     if (!userId || !decision) {
       return NextResponse.json(
@@ -37,14 +47,17 @@ export async function POST(request) {
       );
     }
 
-    const adminEmail = session?.email || "admin@safirpass.gov.in";
+    const adminEmail = session?.email || process.env.ADMIN_EMAIL;
 
     const updated = await processAdminKycDecision({
       userId,
       decision,
       notes,
       adminEmail,
+      documentDecisions,
+      failedDocs,
     });
+
 
     return NextResponse.json({
       success: true,

@@ -16,9 +16,10 @@ export default function ConsentEnginePage() {
 
   // New Request Form State
   const [showForm, setShowForm] = useState(false);
-  const [requesterName, setRequesterName] = useState("Taj Palace Hotel, New Delhi");
+  const [requesterName, setRequesterName] = useState("");
   const [requesterType, setRequesterType] = useState("hotel");
   const [submitting, setSubmitting] = useState(false);
+
 
   useEffect(() => {
     fetch("/api/kyc/status")

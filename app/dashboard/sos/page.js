@@ -53,7 +53,7 @@ export default function SosPanicPage() {
     if (typeof window !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setCoords({ lat: 28.6139, lng: 77.2090 }) // Default New Delhi coordinates
+        (err) => console.warn("GPS lock note:", err.message)
       );
     }
   }, []);
@@ -62,9 +62,10 @@ export default function SosPanicPage() {
     setSubmitting(true);
     setErrorMsg("");
 
-    const lat = coords?.lat || 28.6139;
-    const lng = coords?.lng || 77.2090;
+    const lat = coords?.lat ?? null;
+    const lng = coords?.lng ?? null;
     const refCode = `INC-${Math.floor(10000 + Math.random() * 90000)}`;
+
 
     try {
       if (user?.id) {
