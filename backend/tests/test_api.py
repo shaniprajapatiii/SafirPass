@@ -102,3 +102,17 @@ def test_qr_token_cannot_be_verified_after_tampering() -> None:
         json={"qr_token": f"{token}tampered", "purpose": "hotel check-in"},
     )
     assert response.status_code == 400
+
+
+def test_multilingual_assistant_and_aws_configuration_boundary() -> None:
+    client = make_client()
+
+    assistant_response = client.post(
+        "/v1/integrations/assistant/messages",
+        json={"message": "मुझे मदद चाहिए"},
+    )
+    assert assistant_response.status_code == 200
+    assert assistant_response.json()["language"] == "hi"
+
+    liveness_response = client.post("/v1/integrations/kyc/liveness-sessions")
+    assert liveness_response.status_code == 503

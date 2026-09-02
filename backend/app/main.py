@@ -23,6 +23,7 @@ from app.models import (
 from app.repository import MvpRepository
 from app.security import QrTokenSigner
 from app.services import TouristSafetyService
+from app.integrations import router as integrations_router
 
 TouristId = Annotated[UUID, Header(alias="X-Tourist-Id")]
 AuthorityId = Annotated[UUID, Header(alias="X-Authority-Id")]
@@ -120,6 +121,7 @@ def create_app(
     ) -> Incident:
         return service.get_incident(tourist_id, incident_id)
 
+    app.include_router(integrations_router)
     return app
 
 

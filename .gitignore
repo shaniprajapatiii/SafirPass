@@ -53,3 +53,4 @@ next-env.d.ts
 /backend/data/
 /backend/*.egg-info/
 /tmp/
+/tourist_safety.db

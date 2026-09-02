@@ -38,3 +38,15 @@ The identity headers are a development-only boundary. Replace them with an OIDC 
 - Keep biometrics, passports, and precise location data off-chain. If blockchain is later needed, anchor only a credential-status hash.
 
 Set `QR_SIGNING_SECRET` to a long random value in every non-development environment. `QR_TTL_SECONDS` defaults to 60 seconds.
+
+## Integrated services
+
+Copy `.env.example` to `.env`, then start PostgreSQL with `docker compose up -d` from this directory. The API uses SQLite locally when `DATABASE_URL` is not set.
+
+- `POST /v1/integrations/kyc/liveness-sessions` starts an AWS Rekognition Face Liveness session when `REKOGNITION_ENABLED=true`.
+- `POST /v1/integrations/kyc/face-match` performs OpenCV image-quality checks before AWS Rekognition face comparison.
+- `POST /v1/integrations/locations` persists location events, evaluates Isolation Forest anomaly scores, and records or sends SNS safety notifications.
+- `POST /v1/integrations/notifications` records a notification and sends it through SNS when a phone number or `SNS_TOPIC_ARN` is configured.
+- `POST /v1/integrations/assistant/messages` provides safety responses in English, Hindi, Spanish, and French.
+
+AWS credentials must be supplied through the standard AWS SDK credential chain. Do not use automatic face-match outcomes as a final identity decision; retain an authority-review step.
