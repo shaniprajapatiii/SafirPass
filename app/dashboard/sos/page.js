@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Siren, MapPin, PhoneCall, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
-import { supabase } from "../../../lib/supabase";
-import { toValidUuid } from "../../../lib/uuid";
 
 export default function SosPanicPage() {
   const { user } = useAuth();
@@ -28,17 +26,14 @@ export default function SosPanicPage() {
 
   const isVerified = kyc?.status === "verified";
 
-
   const loadAlerts = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const { data, error } = await supabase
-        .from("sos_alerts")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setAlerts(data || []);
+      const res = await fetch("/api/sos");
+      const data = await res.json();
+      if (data?.alerts) {
+        setAlerts(data.alerts);
+      }
     } catch (e) {
       console.warn("Error fetching SOS alerts:", e);
     }
@@ -66,32 +61,32 @@ export default function SosPanicPage() {
     const lng = coords?.lng ?? null;
     const refCode = `INC-${Math.floor(10000 + Math.random() * 90000)}`;
 
-
     try {
-      if (user?.id) {
-        const { error } = await supabase.from("sos_alerts").insert({
-          user_id: toValidUuid(user.id),
+      const res = await fetch("/api/sos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           category,
           latitude: lat,
           longitude: lng,
           notes: notes.trim() || "Emergency SOS panic button triggered by tourist.",
-          status: "active",
           reference: refCode,
-        });
+        }),
+      });
 
-        if (error) throw error;
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to transmit SOS alert");
 
       setTransmitted(true);
       loadAlerts();
       setTimeout(() => setTransmitted(false), 5000);
     } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || "Failed to transmit SOS to Supabase.");
+      setErrorMsg(err.message || "Failed to transmit SOS alert.");
     } finally {
       setSubmitting(false);
     }
-  }, [user, category, coords, notes, loadAlerts]);
+  }, [category, coords, notes, loadAlerts]);
 
   const startHold = () => {
     if (timer.current) return;
@@ -169,7 +164,7 @@ export default function SosPanicPage() {
             One-Touch Emergency SOS Panic Trigger
           </h1>
           <p className="text-sm text-slate-700">
-            Press and hold the red SOS button for 3 seconds. Your GPS telemetry, medical indicators, and identity token are locked and recorded on Supabase.
+            Press and hold the red SOS button for 3 seconds. Your GPS telemetry, medical indicators, and identity token are locked and recorded on Neon Postgres.
           </p>
         </div>
 
@@ -238,14 +233,14 @@ export default function SosPanicPage() {
               />
               <span className="relative z-10 flex items-center justify-center gap-2">
                 <Siren className="size-6 animate-pulse" />
-                {submitting ? "TRANSMITTING TO SUPABASE..." : holding > 0 ? `HOLDING... ${Math.round(holding)}%` : "PRESS & HOLD (3s) FOR SOS"}
+                {submitting ? "TRANSMITTING SOS..." : holding > 0 ? `HOLDING... ${Math.round(holding)}%` : "PRESS & HOLD (3s) FOR SOS"}
               </span>
             </button>
 
             {transmitted && (
               <div className="rounded-xl bg-emerald-50 p-4 text-xs font-bold text-emerald-800 border border-emerald-200 flex items-center gap-2 animate-in fade-in">
                 <CheckCircle2 className="size-5 text-emerald-600" />
-                <span>SOS Incident Transmitted to Supabase! Responders notified.</span>
+                <span>SOS Incident Transmitted! Responders notified.</span>
               </div>
             )}
           </div>
@@ -275,11 +270,11 @@ export default function SosPanicPage() {
               </div>
             </div>
 
-            {/* Supabase Emergency Alerts History */}
+            {/* Emergency Alerts History */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
               <h3 className="text-base font-bold text-slate-900">Transmitted Database Incident History</h3>
               {alerts.length === 0 ? (
-                <p className="text-xs text-slate-500">No emergency alerts recorded in Supabase.</p>
+                <p className="text-xs text-slate-500">No emergency alerts recorded in database yet.</p>
               ) : (
                 <div className="space-y-3 max-h-72 overflow-y-auto">
                   {alerts.map((a) => (

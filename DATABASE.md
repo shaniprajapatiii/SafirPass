@@ -1,6 +1,6 @@
 # SafirPass: Comprehensive Dual-Database Architecture
 
-SafirPass utilizes a purpose-built dual-database topology combining **PostgreSQL (Supabase)** for structured relational transactions and **MongoDB Atlas (Mongoose)** for high-volume document vaults, biometric logs, and spatial incident telemetry.
+SafirPass utilizes a purpose-built dual-database topology combining **Neon Serverless Postgres** for structured relational transactions and **MongoDB Atlas (Mongoose)** for high-volume document vaults, biometric logs, and spatial incident telemetry.
 
 ---
 
@@ -10,7 +10,7 @@ SafirPass utilizes a purpose-built dual-database topology combining **PostgreSQL
 graph TD
     Client[Tourist App / Authority Admin Portal] --> API[Next.js API Gateway]
     
-    subgraph PostgreSQL [PostgreSQL / Supabase - Relational Core]
+    subgraph PostgreSQL [Neon Serverless Postgres - Relational Core]
         P1[profiles: User Bio & Auth Info]
         P2[kyc_applications: Status, Validity, Tourist ID]
         P3[consent_requests: Granular Data Sharing Flags]
@@ -37,7 +37,7 @@ graph TD
 
 ---
 
-## 2. PostgreSQL / Supabase Schema (`lib/db/postgres.js`)
+## 2. Neon Serverless Postgres Schema (`lib/db/postgres.js` & `database/neon_schema.sql`)
 
 | Entity / Table | Primary Responsibility | Key Fields |
 | :--- | :--- | :--- |

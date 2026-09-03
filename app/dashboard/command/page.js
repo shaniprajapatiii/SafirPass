@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Radar, Radio, Activity, Siren, ShieldCheck, BarChart2, MapPin } from "lucide-react";
-import { BarChart, Bar, XAxis,YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useAuth } from "../../../lib/auth-context";
-import { supabase } from "../../../lib/supabase";
 
 const BOUNDS = { minLat: 6, maxLat: 36, minLng: 68, maxLng: 98 };
 
@@ -26,20 +25,22 @@ export default function CommandConsolePage() {
 
   const loadDatabaseData = useCallback(async () => {
     try {
-      const { data: alertData } = await supabase
-        .from("sos_alerts")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const [sosRes, geoRes] = await Promise.all([
+        fetch("/api/sos?mode=all"),
+        fetch("/api/geofences"),
+      ]);
 
-      if (alertData) setIncidents(alertData);
+      const [sosData, geoData] = await Promise.all([
+        sosRes.json(),
+        geoRes.json(),
+      ]);
 
-      const { data: geofenceData } = await supabase
-        .from("geofences")
-        .select("*");
-
-      if (geofenceData) setGeofences(geofenceData);
+      if (sosData?.alerts) setIncidents(sosData.alerts);
+      if (geoData?.geofences) setGeofences(geoData.geofences);
+      setConnected(true);
     } catch (e) {
       console.warn("Error fetching command center data:", e);
+      setConnected(false);
     } finally {
       setLoading(false);
     }
@@ -47,26 +48,9 @@ export default function CommandConsolePage() {
 
   useEffect(() => {
     loadDatabaseData();
-  }, [loadDatabaseData]);
-
-  // Realtime Supabase Channel Listener
-  useEffect(() => {
-    const channel = supabase
-      .channel("sos-alerts-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "sos_alerts" },
-        () => {
-          loadDatabaseData();
-        }
-      )
-      .subscribe((status) => {
-        setConnected(status === "SUBSCRIBED");
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // Live polling interval for high-priority dispatch telemetry
+    const interval = setInterval(loadDatabaseData, 5000);
+    return () => clearInterval(interval);
   }, [loadDatabaseData]);
 
   const currentSelected = incidents.find((i) => i.id === selectedId) || incidents[0];
@@ -76,14 +60,15 @@ export default function CommandConsolePage() {
     const nextStatus = FLOW[Math.min(FLOW.length - 1, (idx < 0 ? 0 : idx) + 1)];
 
     try {
-      await supabase
-        .from("sos_alerts")
-        .update({
+      await fetch("/api/sos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: alert.id,
           status: nextStatus,
           responder: alert.responder || "National 112 Control Unit",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", alert.id);
+        }),
+      });
 
       loadDatabaseData();
     } catch (err) {
@@ -126,7 +111,7 @@ export default function CommandConsolePage() {
 
           <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-700 border border-emerald-200">
             <Radio className="size-3.5 text-emerald-600 animate-pulse" />
-            <span>{connected ? "Supabase Realtime Channel Connected" : "Connecting Channel..."}</span>
+            <span>{connected ? "Neon Postgres Telemetry Active" : "Connecting Stream..."}</span>
           </div>
         </div>
 
@@ -230,7 +215,7 @@ export default function CommandConsolePage() {
           <div className="lg:col-span-5 space-y-6">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4 max-h-[340px] overflow-y-auto">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Siren className="size-4 text-red-600" /> Dispatch Queue (Supabase)
+                <Siren className="size-4 text-red-600" /> Dispatch Queue (Neon Postgres)
               </h3>
 
               {incidents.length === 0 ? (

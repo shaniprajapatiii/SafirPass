@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { upsertProfile } from "@/lib/db/postgres";
 import { signJwt } from "@/lib/jwt";
 import { toValidUuid } from "@/lib/uuid";
 
@@ -12,16 +12,13 @@ export async function POST(request) {
     }
 
     const userId = toValidUuid(email);
+    const profileName = fullName || email.split("@")[0];
 
-    try {
-      await supabase.from("profiles").insert({
-        id: userId,
-        email,
-        full_name: fullName || email.split("@")[0],
-      });
-    } catch (e) {
-      console.warn("Supabase profile insert note:", e);
-    }
+    await upsertProfile({
+      id: userId,
+      email,
+      full_name: profileName,
+    });
 
     const sessionPayload = {
       id: userId,
