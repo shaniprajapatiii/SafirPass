@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { upsertProfile } from "@/lib/db/postgres";
 import { signJwt } from "@/lib/jwt";
 import { toValidUuid } from "@/lib/uuid";
 
@@ -55,20 +55,12 @@ export async function GET(request) {
 
 
     // Upsert user profile into Supabase PostgreSQL
-    try {
-      await supabase.from("profiles").upsert(
-        {
-          id: userId,
-          full_name: googleUser.name || googleUser.email,
-          email: googleUser.email,
-          avatar_url: googleUser.picture,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" },
-      );
-    } catch (e) {
-      console.warn("Supabase upsert note:", e);
-    }
+    await upsertProfile({
+      id: userId,
+      full_name: googleUser.name || googleUser.email,
+      email: googleUser.email,
+      avatar_url: googleUser.picture,
+    });
 
     // Issue JWT Session
     const sessionPayload = {
