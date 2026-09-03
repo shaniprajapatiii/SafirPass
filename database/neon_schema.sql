@@ -1,5 +1,5 @@
--- SafirPass Database Schema for PostgreSQL / Supabase
--- Production DDL for Profiles, KYC Applications, Consent Requests, Emergency SOS Alerts, Geofences, and Audit Logs
+-- SafirPass PostgreSQL Schema for Neon Serverless Postgres
+-- Pure relational DDL for Profiles, KYC Applications, Consent Requests, Emergency SOS Alerts, Geofences, and Audit Logs
 
 -- 1. Profiles Table
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -12,13 +12,6 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated, anon, service_role;
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Allow profile management" ON public.profiles;
-DROP POLICY IF EXISTS "Users manage own profile" ON public.profiles;
-CREATE POLICY "Allow profile management" ON public.profiles FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- 2. KYC Applications Table (Passport OCR & Face Liveness)
 CREATE TABLE IF NOT EXISTS public.kyc_applications (
@@ -52,20 +45,6 @@ CREATE TABLE IF NOT EXISTS public.kyc_applications (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Ensure missing columns exist if table was already created
-ALTER TABLE public.kyc_applications ADD COLUMN IF NOT EXISTS stay_address TEXT;
-ALTER TABLE public.kyc_applications ADD COLUMN IF NOT EXISTS blood_group TEXT;
-ALTER TABLE public.kyc_applications ADD COLUMN IF NOT EXISTS admin_notes TEXT;
-ALTER TABLE public.kyc_applications ADD COLUMN IF NOT EXISTS reviewed_by TEXT;
-ALTER TABLE public.kyc_applications ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
-
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.kyc_applications TO authenticated, anon, service_role;
-ALTER TABLE public.kyc_applications ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Allow kyc management" ON public.kyc_applications;
-DROP POLICY IF EXISTS "Users manage own kyc" ON public.kyc_applications;
-CREATE POLICY "Allow kyc management" ON public.kyc_applications FOR ALL TO public USING (true) WITH CHECK (true);
-
 -- 3. Consent Requests Table (Data Siloing & Third-Party Verification)
 CREATE TABLE IF NOT EXISTS public.consent_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -78,13 +57,6 @@ CREATE TABLE IF NOT EXISTS public.consent_requests (
   decided_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.consent_requests TO authenticated, anon, service_role;
-ALTER TABLE public.consent_requests ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Allow consent management" ON public.consent_requests;
-DROP POLICY IF EXISTS "Users manage own consents" ON public.consent_requests;
-CREATE POLICY "Allow consent management" ON public.consent_requests FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- 4. Emergency SOS Alerts Table
 CREATE TABLE IF NOT EXISTS public.sos_alerts (
@@ -102,13 +74,6 @@ CREATE TABLE IF NOT EXISTS public.sos_alerts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.sos_alerts TO authenticated, anon, service_role;
-ALTER TABLE public.sos_alerts ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Allow alert management" ON public.sos_alerts;
-DROP POLICY IF EXISTS "Users view own alerts" ON public.sos_alerts;
-CREATE POLICY "Allow alert management" ON public.sos_alerts FOR ALL TO public USING (true) WITH CHECK (true);
-
 -- 5. Geofences Table (Spatial Safety Grid)
 CREATE TABLE IF NOT EXISTS public.geofences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -120,13 +85,6 @@ CREATE TABLE IF NOT EXISTS public.geofences (
   description TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.geofences TO authenticated, anon, service_role;
-ALTER TABLE public.geofences ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Public read geofences" ON public.geofences;
-DROP POLICY IF EXISTS "Allow geofences management" ON public.geofences;
-CREATE POLICY "Allow geofences management" ON public.geofences FOR ALL TO public USING (true) WITH CHECK (true);
 
 -- Initial Geofence Seeds
 INSERT INTO public.geofences (name, category, latitude, longitude, radius_meters, description) VALUES
@@ -148,4 +106,3 @@ CREATE TRIGGER kyc_updated_at BEFORE UPDATE ON public.kyc_applications FOR EACH 
 
 DROP TRIGGER IF EXISTS update_sos_alerts_updated_at ON public.sos_alerts;
 CREATE TRIGGER update_sos_alerts_updated_at BEFORE UPDATE ON public.sos_alerts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-

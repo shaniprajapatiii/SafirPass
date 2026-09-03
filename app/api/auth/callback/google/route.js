@@ -54,7 +54,7 @@ export async function GET(request) {
     const userId = toValidUuid(rawId);
 
 
-    // Upsert user profile into Supabase PostgreSQL
+    // Upsert user profile into Neon PostgreSQL
     await upsertProfile({
       id: userId,
       full_name: googleUser.name || googleUser.email,

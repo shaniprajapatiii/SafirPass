@@ -642,7 +642,7 @@ export default function AdminPortalPage() {
                 <Database className="size-5 text-blue-400" /> System Architecture &amp; Database Health
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">
-                Live connectivity status across PostgreSQL Supabase, MongoDB Atlas Mongoose, and Cloudinary Media CDN.
+                Live connectivity status across PostgreSQL Neon Serverless, MongoDB Atlas Mongoose, and Cloudinary Media CDN.
               </p>
             </div>
 
@@ -650,7 +650,7 @@ export default function AdminPortalPage() {
               <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-                    PostgreSQL (Supabase)
+                    PostgreSQL (Neon Serverless)
                   </span>
                   <span className="size-2.5 rounded-full bg-emerald-500 animate-ping" />
                 </div>

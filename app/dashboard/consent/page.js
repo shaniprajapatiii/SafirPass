@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, Building2, Smartphone, Shield, CheckCircle2, XCircle, Plus, Sparkles, Loader2 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
-import { supabase } from "../../../lib/supabase";
-import { toValidUuid } from "../../../lib/uuid";
 import { ConsentModal } from "../../../components/ConsentModal";
 
 export default function ConsentEnginePage() {
@@ -20,7 +18,6 @@ export default function ConsentEnginePage() {
   const [requesterType, setRequesterType] = useState("hotel");
   const [submitting, setSubmitting] = useState(false);
 
-
   useEffect(() => {
     fetch("/api/kyc/status")
       .then((res) => res.json())
@@ -30,20 +27,17 @@ export default function ConsentEnginePage() {
 
   const isVerified = kyc?.status === "verified";
 
-
   const loadRequests = async () => {
     if (!user?.id) {
       setLoading(false);
       return;
     }
     try {
-      const { data, error } = await supabase
-        .from("consent_requests")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setRequests(data || []);
+      const res = await fetch("/api/consent");
+      const data = await res.json();
+      if (data?.requests) {
+        setRequests(data.requests);
+      }
     } catch (e) {
       console.warn("Error fetching consent requests:", e);
     } finally {
@@ -60,12 +54,15 @@ export default function ConsentEnginePage() {
       prev.map((r) => (r.id === id ? { ...r, status: "approved" } : r))
     );
     setActiveModalRequest(null);
-    if (user?.id) {
-      await supabase
-        .from("consent_requests")
-        .update({ status: "approved", decided_at: new Date().toISOString() })
-        .eq("id", id);
+    try {
+      await fetch("/api/consent", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: "approved" }),
+      });
       loadRequests();
+    } catch (err) {
+      console.error("Error approving consent:", err);
     }
   };
 
@@ -74,16 +71,19 @@ export default function ConsentEnginePage() {
       prev.map((r) => (r.id === id ? { ...r, status: "denied" } : r))
     );
     setActiveModalRequest(null);
-    if (user?.id) {
-      await supabase
-        .from("consent_requests")
-        .update({ status: "denied", decided_at: new Date().toISOString() })
-        .eq("id", id);
+    try {
+      await fetch("/api/consent", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: "denied" }),
+      });
       loadRequests();
+    } catch (err) {
+      console.error("Error denying consent:", err);
     }
   };
 
-  // Insert a new real consent request into Supabase
+  // Insert a new real consent request into Neon Postgres
   const handleCreateRequest = async (e) => {
     e.preventDefault();
     if (!user?.id) return;
@@ -97,19 +97,20 @@ export default function ConsentEnginePage() {
         : ["full_name", "emergency_contact", "validity"];
 
     try {
-      const { data, error } = await supabase.from("consent_requests").insert({
-        user_id: toValidUuid(user.id),
-        requester: requesterName,
-        requester_type: requesterType,
-        attributes: defaultAttributes,
-        status: "pending",
-      }).select().single();
+      const res = await fetch("/api/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requester: requesterName,
+          requester_type: requesterType,
+          attributes: defaultAttributes,
+        }),
+      });
 
-      if (error) throw error;
-
+      const data = await res.json();
       setShowForm(false);
       loadRequests();
-      if (data) setActiveModalRequest(data);
+      if (data?.request) setActiveModalRequest(data.request);
     } catch (err) {
       console.error("Error creating consent request:", err);
     } finally {
@@ -227,7 +228,7 @@ export default function ConsentEnginePage() {
                 disabled={submitting}
                 className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700"
               >
-                {submitting ? <Loader2 className="size-4 animate-spin" /> : "Insert Request into Supabase"}
+                {submitting ? <Loader2 className="size-4 animate-spin" /> : "Insert Request into Database"}
               </button>
             </div>
           </form>
@@ -239,7 +240,7 @@ export default function ConsentEnginePage() {
 
           {loading ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm animate-pulse">
-              <p className="text-xs text-slate-500 font-bold">Loading consent records from Supabase...</p>
+              <p className="text-xs text-slate-500 font-bold">Loading consent records from Neon Postgres...</p>
             </div>
           ) : requests.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm space-y-3">

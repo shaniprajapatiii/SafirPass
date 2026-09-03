@@ -17,7 +17,7 @@ The platform combines:
 
 SafirPass gives tourists a safer alternative to handing over physical passports in hotels, transport hubs, rental agencies, and embassies. Instead of exposing full identity documents, the system verifies a tourist’s identity and shares only necessary attributes such as name, validity period, nationality, or stay details.
 
-This project is built with Next.js and Supabase, and it includes:
+This project is built with Next.js, Neon Serverless Postgres, and MongoDB Atlas, and it includes:
 - authentication with Google OAuth and email-based sign in
 - profile and KYC data management
 - QR-based selective disclosure flows
@@ -41,13 +41,14 @@ This project is built with Next.js and Supabase, and it includes:
 - Dashboard for traveler, consent, and verification status
 - Emergency command console for SOS triage
 - Safety geofence visibility
-- Real-time alert data from Supabase
+- Real-time alert dispatch telemetry
 
 ### Privacy & Security
 - Attribute-based sharing instead of raw passport exposure
 - Session management with JWT and HTTP-only cookies
 - Google OAuth integration
-- Supabase Row Level Security policies
+- Parameterized SQL protection via Neon Serverless Postgres
+- Dual-layer storage with MongoDB Atlas Document Vault
 - Minimal data sharing by default
 
 ---
@@ -57,7 +58,8 @@ This project is built with Next.js and Supabase, and it includes:
 - Next.js 16
 - React 19
 - Tailwind CSS
-- Supabase
+- Neon Serverless Postgres (`@neondatabase/serverless`)
+- MongoDB Atlas (Mongoose)
 - Google OAuth 2.0
 - Web Crypto API for JWT signing
 - QR code and barcode generation
@@ -78,9 +80,13 @@ safir_pass/
 │   └── ...
 ├── components/
 ├── lib/
+│   ├── db/
+│   │   ├── postgres.js
+│   │   └── mongoose.js
+│   └── ...
 ├── public/
-├── supabase/
-│   └── schema.sql
+├── database/
+│   └── neon_schema.sql
 ├── .env.example
 ├── package.json
 ├── README.md
@@ -96,7 +102,8 @@ Before you start, make sure you have:
 - Node.js 20 or newer
 - npm 10 or newer
 - Git
-- A Supabase project
+- A Neon Serverless Postgres project (or PostgreSQL database)
+- A MongoDB Atlas database
 - A Google Cloud project with OAuth credentials
 
 ---
@@ -127,20 +134,20 @@ copy .env.example .env.local
 Then update the file with your values:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+DATABASE_URL="postgresql://username:password@ep-example-123.us-east-2.aws.neon.tech/neondb?sslmode=require"
+MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/SafirPass?retryWrites=true&w=majority"
 NEXT_PUBLIC_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 JWT_SECRET="your-long-random-secret"
 ```
 
-### 4. Create your Supabase database
+### 4. Create your PostgreSQL database
 
-In Supabase SQL Editor, run the SQL from:
+In Neon Console SQL Editor, run the SQL from:
 
 ```bash
-supabase/schema.sql
+database/neon_schema.sql
 ```
 
 This creates:
