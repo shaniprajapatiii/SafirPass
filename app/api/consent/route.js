@@ -4,7 +4,7 @@ import {
   getConsentRequestsByUserId,
   updateConsentRequestStatus,
 } from "@/lib/db/postgres";
-import { getSession } from "@/lib/session";
+import { getSession, verifyJwt } from "@/lib/jwt";
 import { toValidUuid } from "@/lib/uuid";
 
 export async function GET(request) {
