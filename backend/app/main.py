@@ -8,12 +8,8 @@ from fastapi import Depends, FastAPI, Header, Request, status
 from app.config import Settings
 from app.models import (
     Credential,
-    DynamicQr,
     Health,
     Incident,
-    KycApplication,
-    KycApplicationCreate,
-    KycReviewCreate,
     SosCreate,
     Tourist,
     TouristCreate,
@@ -26,7 +22,6 @@ from app.services import TouristSafetyService
 from app.integrations import router as integrations_router
 
 TouristId = Annotated[UUID, Header(alias="X-Tourist-Id")]
-AuthorityId = Annotated[UUID, Header(alias="X-Authority-Id")]
 PartnerId = Annotated[UUID, Header(alias="X-Partner-Id")]
 
 
@@ -59,41 +54,12 @@ def create_app(
         return service.create_tourist(payload)
 
     @app.post(
-        "/v1/kyc/applications",
-        response_model=KycApplication,
-        status_code=status.HTTP_201_CREATED,
-    )
-    def submit_kyc(
-        payload: KycApplicationCreate,
-        tourist_id: TouristId,
-        service: Service,
-    ) -> KycApplication:
-        return service.submit_kyc(tourist_id, payload)
-
-    @app.post("/v1/kyc/applications/{application_id}/review", response_model=KycApplication)
-    def review_kyc(
-        application_id: UUID,
-        payload: KycReviewCreate,
-        authority_id: AuthorityId,
-        service: Service,
-    ) -> KycApplication:
-        return service.review_kyc(application_id, authority_id, payload)
-
-    @app.post(
         "/v1/credentials", response_model=Credential, status_code=status.HTTP_201_CREATED
     )
     def issue_credential(
         tourist_id: TouristId, service: Service
     ) -> Credential:
         return service.issue_credential(tourist_id)
-
-    @app.post("/v1/credentials/{credential_id}/qr", response_model=DynamicQr)
-    def create_dynamic_qr(
-        credential_id: UUID,
-        tourist_id: TouristId,
-        service: Service,
-    ) -> DynamicQr:
-        return service.create_dynamic_qr(tourist_id, credential_id)
 
     @app.post("/v1/verifications", response_model=VerificationResult)
     def verify_qr(

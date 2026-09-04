@@ -52,5 +52,8 @@ next-env.d.ts
 /backend/.pytest_cache/
 /backend/data/
 /backend/*.egg-info/
-/tmp/
+*.db
+/backend/tourist_safety.db
 /tourist_safety.db
+tmp/
+/tmp/

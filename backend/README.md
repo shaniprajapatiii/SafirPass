@@ -22,10 +22,9 @@ Open `http://127.0.0.1:8000/docs` for the interactive OpenAPI documentation.
 ## Demo flow
 
 1. `POST /v1/tourists` to create a tourist profile.
-2. Send its ID in `X-Tourist-Id` to create a KYC application.
-3. Send an authority ID in `X-Authority-Id` to review the application.
-4. Issue a credential, generate a dynamic QR token, and verify it as a partner using `X-Partner-Id`.
-5. Create an SOS incident with `POST /v1/incidents/sos`.
+2. Send its ID in `X-Tourist-Id` to `POST /v1/credentials` to issue a credential.
+3. Verify QR tokens using `POST /v1/verifications` as a partner with `X-Partner-Id`.
+4. Create an SOS incident with `POST /v1/incidents/sos`.
 
 The identity headers are a development-only boundary. Replace them with an OIDC provider such as Amazon Cognito, enforce role claims, and use a persistent audit store before using this beyond a demo.
 

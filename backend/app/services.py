@@ -7,12 +7,7 @@ from fastapi import HTTPException, status
 from app.models import (
     Credential,
     CredentialStatus,
-    DynamicQr,
     Incident,
-    KycApplication,
-    KycApplicationCreate,
-    KycReviewCreate,
-    KycStatus,
     SosCreate,
     Tourist,
     TouristCreate,
@@ -32,46 +27,9 @@ class TouristSafetyService:
     def create_tourist(self, payload: TouristCreate) -> Tourist:
         return self._repository.create_tourist(payload)
 
-    def submit_kyc(
-        self, tourist_id: UUID, payload: KycApplicationCreate
-    ) -> KycApplication:
-        self._get_tourist(tourist_id)
-        return self._repository.create_kyc_application(tourist_id, payload)
-
-    def review_kyc(
-        self, application_id: UUID, authority_id: UUID, payload: KycReviewCreate
-    ) -> KycApplication:
-        application = self._get_kyc_application(application_id)
-        review_status = KycStatus.APPROVED if payload.approved else KycStatus.REJECTED
-        try:
-            return self._repository.review_kyc_application(
-                application.id,
-                status=review_status,
-                authority_id=authority_id,
-                reason=payload.reason,
-            )
-        except ValueError as error:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
-
     def issue_credential(self, tourist_id: UUID) -> Credential:
         self._get_tourist(tourist_id)
-        if not self._repository.has_approved_kyc(tourist_id):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="an approved KYC application is required before issuing a credential",
-            )
         return self._repository.create_credential(tourist_id)
-
-    def create_dynamic_qr(self, tourist_id: UUID, credential_id: UUID) -> DynamicQr:
-        credential = self._get_credential(credential_id)
-        self._require_owner(credential.tourist_id, tourist_id, "credential")
-        if credential.status is not CredentialStatus.ACTIVE:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="credential is not active",
-            )
-        token, expires_at = self._signer.issue(credential.id)
-        return DynamicQr(credential_id=credential.id, token=token, expires_at=expires_at)
 
     def verify_qr(
         self, partner_id: UUID, payload: VerificationCreate
@@ -113,12 +71,6 @@ class TouristSafetyService:
     def _get_tourist(self, tourist_id: UUID) -> Tourist:
         try:
             return self._repository.get_tourist(tourist_id)
-        except NotFoundError as error:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-
-    def _get_kyc_application(self, application_id: UUID) -> KycApplication:
-        try:
-            return self._repository.get_kyc_application(application_id)
         except NotFoundError as error:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
 

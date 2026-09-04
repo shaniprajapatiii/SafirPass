@@ -8,9 +8,6 @@ from app.models import (
     CredentialStatus,
     Incident,
     IncidentStatus,
-    KycApplication,
-    KycApplicationCreate,
-    KycStatus,
     SosCreate,
     Tourist,
     TouristCreate,
@@ -28,7 +25,6 @@ class MvpRepository:
     def __init__(self) -> None:
         self._lock = RLock()
         self._tourists: dict[UUID, Tourist] = {}
-        self._kyc_applications: dict[UUID, KycApplication] = {}
         self._credentials: dict[UUID, Credential] = {}
         self._incidents: dict[UUID, Incident] = {}
         self.verification_audits: list[dict[str, object]] = []
@@ -45,59 +41,6 @@ class MvpRepository:
         if tourist is None:
             raise NotFoundError("tourist not found")
         return tourist
-
-    def create_kyc_application(
-        self, tourist_id: UUID, payload: KycApplicationCreate
-    ) -> KycApplication:
-        application = KycApplication(
-            id=uuid4(),
-            tourist_id=tourist_id,
-            status=KycStatus.PENDING,
-            created_at=utc_now(),
-            **payload.model_dump(),
-        )
-        with self._lock:
-            self._kyc_applications[application.id] = application
-        return application
-
-    def get_kyc_application(self, application_id: UUID) -> KycApplication:
-        with self._lock:
-            application = self._kyc_applications.get(application_id)
-        if application is None:
-            raise NotFoundError("KYC application not found")
-        return application
-
-    def review_kyc_application(
-        self,
-        application_id: UUID,
-        *,
-        status: KycStatus,
-        authority_id: UUID,
-        reason: str,
-    ) -> KycApplication:
-        application = self.get_kyc_application(application_id)
-        if application.status is not KycStatus.PENDING:
-            raise ValueError("KYC application has already been reviewed")
-
-        reviewed = application.model_copy(
-            update={
-                "status": status,
-                "reviewed_at": utc_now(),
-                "reviewed_by": authority_id,
-                "review_reason": reason,
-            }
-        )
-        with self._lock:
-            self._kyc_applications[application_id] = reviewed
-        return reviewed
-
-    def has_approved_kyc(self, tourist_id: UUID) -> bool:
-        with self._lock:
-            return any(
-                application.tourist_id == tourist_id
-                and application.status is KycStatus.APPROVED
-                for application in self._kyc_applications.values()
-            )
 
     def create_credential(self, tourist_id: UUID) -> Credential:
         credential = Credential(

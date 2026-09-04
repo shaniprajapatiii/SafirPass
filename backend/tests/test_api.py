@@ -1,9 +1,11 @@
-from uuid import uuid4
+import os
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.main import create_app
+from app.security import QrTokenSigner
 
 
 def make_client() -> TestClient:
@@ -21,45 +23,22 @@ def create_tourist(client: TestClient) -> str:
     return response.json()["id"]
 
 
-def test_kyc_qr_verification_and_sos_flow() -> None:
+def test_credential_verification_and_sos_flow() -> None:
     client = make_client()
     tourist_id = create_tourist(client)
     tourist_headers = {"X-Tourist-Id": tourist_id}
-
-    kyc_response = client.post(
-        "/v1/kyc/applications",
-        headers=tourist_headers,
-        json={
-            "document_reference": "s3://secure-bucket/documents/passport.enc",
-            "selfie_reference": "s3://secure-bucket/selfies/liveness.enc",
-        },
-    )
-    assert kyc_response.status_code == 201
-
-    blocked_credential = client.post("/v1/credentials", headers=tourist_headers)
-    assert blocked_credential.status_code == 409
-
-    review_response = client.post(
-        f"/v1/kyc/applications/{kyc_response.json()['id']}/review",
-        headers={"X-Authority-Id": str(uuid4())},
-        json={"approved": True, "reason": "Verified through approved review process"},
-    )
-    assert review_response.status_code == 200
-    assert review_response.json()["status"] == "approved"
 
     credential_response = client.post("/v1/credentials", headers=tourist_headers)
     assert credential_response.status_code == 201
     credential_id = credential_response.json()["id"]
 
-    qr_response = client.post(
-        f"/v1/credentials/{credential_id}/qr", headers=tourist_headers
-    )
-    assert qr_response.status_code == 200
+    signer = QrTokenSigner(secret="test-signing-secret", ttl_seconds=60)
+    token, _ = signer.issue(UUID(credential_id))
 
     verification_response = client.post(
         "/v1/verifications",
         headers={"X-Partner-Id": str(uuid4())},
-        json={"qr_token": qr_response.json()["token"], "purpose": "hotel check-in"},
+        json={"qr_token": token, "purpose": "hotel check-in"},
     )
     assert verification_response.status_code == 200
     assert verification_response.json()["valid"] is True
@@ -81,20 +60,9 @@ def test_qr_token_cannot_be_verified_after_tampering() -> None:
     tourist_id = create_tourist(client)
     tourist_headers = {"X-Tourist-Id": tourist_id}
 
-    kyc_response = client.post(
-        "/v1/kyc/applications",
-        headers=tourist_headers,
-        json={"document_reference": "s3://bucket/passport", "selfie_reference": "s3://bucket/selfie"},
-    )
-    client.post(
-        f"/v1/kyc/applications/{kyc_response.json()['id']}/review",
-        headers={"X-Authority-Id": str(uuid4())},
-        json={"approved": True, "reason": "Approved for QR token test"},
-    )
     credential_id = client.post("/v1/credentials", headers=tourist_headers).json()["id"]
-    token = client.post(
-        f"/v1/credentials/{credential_id}/qr", headers=tourist_headers
-    ).json()["token"]
+    signer = QrTokenSigner(secret="test-signing-secret", ttl_seconds=60)
+    token, _ = signer.issue(UUID(credential_id))
 
     response = client.post(
         "/v1/verifications",
@@ -115,4 +83,8 @@ def test_multilingual_assistant_and_aws_configuration_boundary() -> None:
     assert assistant_response.json()["language"] == "hi"
 
     liveness_response = client.post("/v1/integrations/kyc/liveness-sessions")
-    assert liveness_response.status_code == 503
+    if os.getenv("REKOGNITION_ENABLED", "false").lower() == "true":
+        assert liveness_response.status_code == 200
+        assert "session_id" in liveness_response.json()
+    else:
+        assert liveness_response.status_code == 503
