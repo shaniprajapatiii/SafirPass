@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Siren, MapPin, PhoneCall, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { useAuth } from "../../../lib/auth-context";
-import { supabase } from "../../../lib/supabase";
-import { toValidUuid } from "../../../lib/uuid";
 
 export default function SosPanicPage() {
   const { user } = useAuth();
+  const [kyc, setKyc] = useState(null);
   const [category, setCategory] = useState("medical");
   const [notes, setNotes] = useState("");
   const [holding, setHolding] = useState(0);
@@ -18,16 +17,23 @@ export default function SosPanicPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const timer = useRef(null);
 
+  useEffect(() => {
+    fetch("/api/kyc/status")
+      .then((res) => res.json())
+      .then((data) => setKyc(data?.kyc || null))
+      .catch(() => {});
+  }, [user]);
+
+  const isVerified = kyc?.status === "verified";
+
   const loadAlerts = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const { data, error } = await supabase
-        .from("sos_alerts")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setAlerts(data || []);
+      const res = await fetch("/api/sos");
+      const data = await res.json();
+      if (data?.alerts) {
+        setAlerts(data.alerts);
+      }
     } catch (e) {
       console.warn("Error fetching SOS alerts:", e);
     }
@@ -42,7 +48,7 @@ export default function SosPanicPage() {
     if (typeof window !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => setCoords({ lat: 28.6139, lng: 77.2090 }) // Default New Delhi coordinates
+        (err) => console.warn("GPS lock note:", err.message)
       );
     }
   }, []);
@@ -51,35 +57,36 @@ export default function SosPanicPage() {
     setSubmitting(true);
     setErrorMsg("");
 
-    const lat = coords?.lat || 28.6139;
-    const lng = coords?.lng || 77.2090;
+    const lat = coords?.lat ?? null;
+    const lng = coords?.lng ?? null;
     const refCode = `INC-${Math.floor(10000 + Math.random() * 90000)}`;
 
     try {
-      if (user?.id) {
-        const { error } = await supabase.from("sos_alerts").insert({
-          user_id: toValidUuid(user.id),
+      const res = await fetch("/api/sos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           category,
           latitude: lat,
           longitude: lng,
           notes: notes.trim() || "Emergency SOS panic button triggered by tourist.",
-          status: "active",
           reference: refCode,
-        });
+        }),
+      });
 
-        if (error) throw error;
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to transmit SOS alert");
 
       setTransmitted(true);
       loadAlerts();
       setTimeout(() => setTransmitted(false), 5000);
     } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || "Failed to transmit SOS to Supabase.");
+      setErrorMsg(err.message || "Failed to transmit SOS alert.");
     } finally {
       setSubmitting(false);
     }
-  }, [user, category, coords, notes, loadAlerts]);
+  }, [category, coords, notes, loadAlerts]);
 
   const startHold = () => {
     if (timer.current) return;
@@ -104,9 +111,50 @@ export default function SosPanicPage() {
 
   useEffect(() => () => stopHold(), []);
 
+  if (!isVerified) {
+    return (
+      <div className="min-h-screen bg-slate-50 py-16 px-4">
+        <div className="container-page max-w-xl space-y-6 text-center">
+          <div className="rounded-3xl border-2 border-amber-300 bg-white p-10 shadow-xl space-y-6">
+            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
+              <Siren className="size-8" />
+            </div>
+            <div className="space-y-2">
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+                Authority Verification Required
+              </span>
+              <h1 className="font-serif text-2xl font-bold text-slate-900">
+                SOS Emergency Dispatch is Locked
+              </h1>
+              <p className="text-sm text-slate-600">
+                To route high-priority emergency telemetry to National 112 control units, your digital identity must be verified by the Government Authority.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <a
+                href="/dashboard/verify"
+                className="rounded-xl bg-blue-600 px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition-colors"
+              >
+                Go to e-KYC Verification
+              </a>
+              <a
+                href="/dashboard"
+                className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              >
+                Back to Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
       <div className="container-page max-w-4xl space-y-8">
+
         {/* Header */}
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 md:p-8 space-y-2">
           <span className="text-xs font-bold uppercase tracking-wider text-red-700 flex items-center gap-1.5">
@@ -116,7 +164,7 @@ export default function SosPanicPage() {
             One-Touch Emergency SOS Panic Trigger
           </h1>
           <p className="text-sm text-slate-700">
-            Press and hold the red SOS button for 3 seconds. Your GPS telemetry, medical indicators, and identity token are locked and recorded on Supabase.
+            Press and hold the red SOS button for 3 seconds. Your GPS telemetry, medical indicators, and identity token are locked and recorded on Neon Postgres.
           </p>
         </div>
 
@@ -185,14 +233,14 @@ export default function SosPanicPage() {
               />
               <span className="relative z-10 flex items-center justify-center gap-2">
                 <Siren className="size-6 animate-pulse" />
-                {submitting ? "TRANSMITTING TO SUPABASE..." : holding > 0 ? `HOLDING... ${Math.round(holding)}%` : "PRESS & HOLD (3s) FOR SOS"}
+                {submitting ? "TRANSMITTING SOS..." : holding > 0 ? `HOLDING... ${Math.round(holding)}%` : "PRESS & HOLD (3s) FOR SOS"}
               </span>
             </button>
 
             {transmitted && (
               <div className="rounded-xl bg-emerald-50 p-4 text-xs font-bold text-emerald-800 border border-emerald-200 flex items-center gap-2 animate-in fade-in">
                 <CheckCircle2 className="size-5 text-emerald-600" />
-                <span>SOS Incident Transmitted to Supabase! Responders notified.</span>
+                <span>SOS Incident Transmitted! Responders notified.</span>
               </div>
             )}
           </div>
@@ -222,11 +270,11 @@ export default function SosPanicPage() {
               </div>
             </div>
 
-            {/* Supabase Emergency Alerts History */}
+            {/* Emergency Alerts History */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
               <h3 className="text-base font-bold text-slate-900">Transmitted Database Incident History</h3>
               {alerts.length === 0 ? (
-                <p className="text-xs text-slate-500">No emergency alerts recorded in Supabase.</p>
+                <p className="text-xs text-slate-500">No emergency alerts recorded in database yet.</p>
               ) : (
                 <div className="space-y-3 max-h-72 overflow-y-auto">
                   {alerts.map((a) => (

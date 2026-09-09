@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { upsertProfile, getProfileById } from "@/lib/db/postgres";
 import { signJwt } from "@/lib/jwt";
 import { toValidUuid } from "@/lib/uuid";
 
@@ -11,22 +11,15 @@ export async function POST(request) {
       return NextResponse.json({ error: "Email and password required" }, { status: 400 });
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("email", email)
-      .maybeSingle();
+    const userId = toValidUuid(email);
+    const existingProfile = await getProfileById(userId);
+    const fullName = existingProfile?.full_name || email.split("@")[0];
 
-    const userId = profile?.id || toValidUuid(email);
-    const fullName = profile?.full_name || email.split("@")[0];
-
-    if (!profile) {
-      await supabase.from("profiles").insert({
-        id: userId,
-        email,
-        full_name: fullName,
-      }).catch(() => { });
-    }
+    const profile = await upsertProfile({
+      id: userId,
+      email,
+      full_name: fullName,
+    });
 
     const sessionPayload = {
       id: userId,

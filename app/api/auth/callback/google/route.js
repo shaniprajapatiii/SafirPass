@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { upsertProfile } from "@/lib/db/postgres";
 import { signJwt } from "@/lib/jwt";
 import { toValidUuid } from "@/lib/uuid";
 
@@ -46,35 +46,21 @@ export async function GET(request) {
       }
     }
 
-    // Fallback if local credentials are not yet added to .env
     if (!googleUser || !googleUser.email) {
-      googleUser = {
-        id: "google-usr-101",
-        email: "google.tourist@example.com",
-        name: "Google Authenticated Tourist",
-        picture:
-          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      };
+      return NextResponse.redirect(`${appUrl}/auth?error=google_auth_failed`);
     }
 
-    const rawId = googleUser.id || googleUser.email || `usr-${Date.now()}`;
+    const rawId = googleUser.id || googleUser.email;
     const userId = toValidUuid(rawId);
 
-    // Upsert user profile into Supabase PostgreSQL
-    try {
-      await supabase.from("profiles").upsert(
-        {
-          id: userId,
-          full_name: googleUser.name || googleUser.email,
-          email: googleUser.email,
-          avatar_url: googleUser.picture,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" },
-      );
-    } catch (e) {
-      console.warn("Supabase upsert note:", e);
-    }
+
+    // Upsert user profile into Neon PostgreSQL
+    await upsertProfile({
+      id: userId,
+      full_name: googleUser.name || googleUser.email,
+      email: googleUser.email,
+      avatar_url: googleUser.picture,
+    });
 
     // Issue JWT Session
     const sessionPayload = {

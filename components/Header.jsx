@@ -13,13 +13,15 @@ import {
   QrCode,
   Siren,
   PhoneCall,
-  UserCheck
+  UserCheck,
+  Building2,
+  ScanFace
 } from "lucide-react";
 import { useAuth } from "../lib/auth-context";
 
 export function Header() {
   const pathname = usePathname();
-  const { user, signOut, signInWithGoogle } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
@@ -50,7 +52,7 @@ export function Header() {
           </div>
         </Link>
 
-        {/* Streamlined Desktop Navigation */}
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-2">
           {navLinks.map((link) => (
             <Link
@@ -65,6 +67,19 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-colors flex items-center gap-1.5 ${
+                isActive("/admin")
+                  ? "bg-slate-900 text-white"
+                  : "bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-100"
+              }`}
+            >
+              <Building2 className="size-3.5" />
+              <span>Admin Queue</span>
+            </Link>
+          )}
         </nav>
 
         {/* Action Controls & Auth Status */}
@@ -94,9 +109,14 @@ export function Header() {
                     {user.user_metadata?.full_name ? user.user_metadata.full_name[0] : (user.email ? user.email[0].toUpperCase() : "T")}
                   </div>
                 )}
-                <span className="max-w-[120px] truncate text-xs font-bold text-slate-900">
-                  {user.user_metadata?.full_name || user.email?.split("@")[0] || "Tourist"}
-                </span>
+                <div className="flex flex-col text-left">
+                  <span className="max-w-[120px] truncate text-xs font-bold text-slate-900">
+                    {user.user_metadata?.full_name || user.email?.split("@")[0] || "Tourist"}
+                  </span>
+                  {isAdmin && (
+                    <span className="text-[9px] font-bold text-blue-600 uppercase">Gov. Admin</span>
+                  )}
+                </div>
                 <ChevronDown className="size-3.5 text-slate-500" />
               </button>
 
@@ -107,27 +127,46 @@ export function Header() {
                     <p className="truncate text-slate-500">{user.email}</p>
                   </div>
                   <div className="py-1">
-                    <Link
-                      href="/dashboard"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      <LayoutDashboard className="size-4 text-blue-600" /> Dashboard Overview
-                    </Link>
-                    <Link
-                      href="/dashboard/id"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      <QrCode className="size-4 text-blue-600" /> Digital ID &amp; QR
-                    </Link>
-                    <Link
-                      href="/dashboard/sos"
-                      onClick={() => setUserDropdownOpen(false)}
-                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
-                    >
-                      <Siren className="size-4 text-red-600" /> Emergency SOS
-                    </Link>
+                    {isAdmin ? (
+                      <Link
+                        href="/admin"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100"
+                      >
+                        <Building2 className="size-4 text-blue-600" /> Admin Verification Hub
+                      </Link>
+                    ) : (
+                      <>
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          <LayoutDashboard className="size-4 text-blue-600" /> Dashboard Overview
+                        </Link>
+                        <Link
+                          href="/dashboard/verify"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          <ScanFace className="size-4 text-purple-600" /> e-KYC Verification
+                        </Link>
+                        <Link
+                          href="/dashboard/id"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                          <QrCode className="size-4 text-blue-600" /> Digital ID &amp; QR
+                        </Link>
+                        <Link
+                          href="/dashboard/sos"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
+                        >
+                          <Siren className="size-4 text-red-600" /> Emergency SOS
+                        </Link>
+                      </>
+                    )}
                   </div>
                   <div className="border-t border-slate-100 pt-1">
                     <button
@@ -148,7 +187,7 @@ export function Header() {
               href="/auth"
               className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-blue-700 transition-all hover:shadow-lg"
             >
-              <UserCheck className="size-4" /> Sign in with Google
+              <UserCheck className="size-4" /> Sign in / Register
             </Link>
           )}
         </div>
@@ -187,11 +226,11 @@ export function Header() {
             {user ? (
               <>
                 <Link
-                  href="/dashboard"
+                  href={isAdmin ? "/admin" : "/dashboard"}
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white"
                 >
-                  <LayoutDashboard className="size-4" /> Go to Dashboard
+                  <LayoutDashboard className="size-4" /> {isAdmin ? "Go to Admin Console" : "Go to Dashboard"}
                 </Link>
                 <button
                   onClick={() => {
@@ -209,7 +248,7 @@ export function Header() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white"
               >
-                <UserCheck className="size-4" /> Sign in with Google
+                <UserCheck className="size-4" /> Sign in / Register
               </Link>
             )}
           </div>

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
 export async function GET(request) {
-  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "mock-google-client-id.apps.googleusercontent.com";
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
   const redirectUri = `${appUrl}/api/auth/callback/google`;
 
   const scope = encodeURIComponent("openid email profile");

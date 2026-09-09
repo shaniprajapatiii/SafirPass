@@ -98,20 +98,20 @@ copy .env.example .env.local
 Then fill in the required values:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+DATABASE_URL="postgresql://username:password@ep-example-123.us-east-2.aws.neon.tech/neondb?sslmode=require"
+MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/SafirPass?retryWrites=true&w=majority"
 NEXT_PUBLIC_GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 JWT_SECRET="your-long-random-secret"
 ```
 
-### Supabase setup
+### Neon Postgres setup
 
 Run the SQL from:
 
 ```bash
-supabase/schema.sql
+database/neon_schema.sql
 ```
 
 This creates the required tables for:

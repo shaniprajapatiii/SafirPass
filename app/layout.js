@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: "SafirPass — AI-Powered Smart Tourist Identity, Safety & Incident Response System",
   description: "SafirPass is a privacy-first digital tourist identity platform for India & globally: verified e-KYC, selective disclosure QR credentials, PostGIS safety geofencing and automated emergency dispatch.",
   openGraph: {
