@@ -17,7 +17,11 @@ import {
   ScanFace,
   Lock,
   RefreshCw,
-  FileCheck
+  FileCheck,
+  Radio,
+  MapPin,
+  Sparkles,
+  Scale,
 } from "lucide-react";
 import { useAuth } from "../../lib/auth-context";
 
@@ -25,6 +29,40 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [kyc, setKyc] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pendingConsent, setPendingConsent] = useState(null);
+  const [geoStatus, setGeoStatus] = useState(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+
+  const checkGeofenceSafety = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) return;
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch("/api/geofences/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            }),
+          });
+          const data = await res.json();
+          if (data?.success) {
+            setGeoStatus(data);
+          }
+        } catch (e) {
+          console.warn("Geofence check note:", e.message);
+        } finally {
+          setGeoLoading(false);
+        }
+      },
+      (err) => {
+        console.warn("Geolocation lock note:", err.message);
+        setGeoLoading(false);
+      }
+    );
+  };
 
   const loadData = async () => {
     try {
@@ -41,9 +79,25 @@ export default function DashboardPage() {
     }
   };
 
+  const checkPendingConsent = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch("/api/consent");
+      const data = await res.json();
+      const pending = data?.requests?.find((r) => r.status === "pending");
+      setPendingConsent(pending || null);
+    } catch (e) {
+      console.warn("Consent check note:", e.message);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       loadData();
+      checkPendingConsent();
+      checkGeofenceSafety();
+      const interval = setInterval(checkPendingConsent, 4000);
+      return () => clearInterval(interval);
     }
   }, [user]);
 
@@ -53,6 +107,36 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50 py-10">
       <div className="container-page space-y-8">
+        {/* Real-time Incoming Check-In Consent Alert Banner */}
+        {pendingConsent && (
+          <div className="rounded-3xl border-2 border-amber-400 bg-amber-50/95 p-5 shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in slide-in-from-top-3">
+            <div className="flex items-center gap-3">
+              <div className="flex size-11 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-xs shrink-0">
+                <Radio className="size-6 animate-ping" />
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-900 block">
+                  Check-In Scan Detected • Action Required
+                </span>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  {pendingConsent.requester} is requesting your check-in credentials
+                </h3>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Approve or deny this request to share your verified identity without handing over your physical passport.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/dashboard/consent"
+              className="flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 text-xs font-bold shadow-md transition-colors shrink-0"
+            >
+              <span>Review &amp; Approve</span>
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
+        )}
+
         {/* Welcome Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
           <div className="space-y-1">
@@ -87,7 +171,87 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Dynamic Verification Progression Banner */}
+        {/* Live GPS Geofence Safety Radar Banner */}
+        {geoStatus ? (
+          geoStatus.activeAlert ? (
+            <div className={`rounded-2xl border-2 p-5 shadow-sm space-y-3 animate-in slide-in-from-top-2 ${
+              geoStatus.activeAlert.level === "CRITICAL"
+                ? "border-red-500 bg-red-50 text-red-950"
+                : "border-amber-400 bg-amber-50 text-amber-950"
+            }`}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className={`flex size-10 items-center justify-center rounded-xl text-white shadow-xs ${
+                    geoStatus.activeAlert.level === "CRITICAL" ? "bg-red-600" : "bg-amber-600"
+                  }`}>
+                    <Radar className="size-5 animate-spin" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider block opacity-80">
+                      Geofence Safety Alert • {geoStatus.activeAlert.level} Priority
+                    </span>
+                    <h3 className="text-base font-bold">
+                      {geoStatus.activeAlert.title}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <a
+                    href="tel:1363"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-bold text-slate-800 border border-slate-300 shadow-xs hover:bg-slate-50 transition"
+                  >
+                    <span>Helpline 1363</span>
+                  </a>
+                  <Link
+                    href="/dashboard/sos"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-red-700 transition"
+                  >
+                    <Siren className="size-3.5" />
+                    <span>Emergency SOS</span>
+                  </Link>
+                </div>
+              </div>
+
+              <p className="text-xs leading-relaxed bg-white/60 p-3 rounded-xl border border-current/10">
+                {geoStatus.activeAlert.message}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-2xs">
+                  <Radar className="size-4 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-emerald-950">
+                      Live Tourist Safety Radar Active
+                    </h4>
+                    <span className="rounded-full bg-emerald-200/80 px-2 py-0.5 text-[10px] font-extrabold text-emerald-900">
+                      Status: Safe
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-800">
+                    {geoStatus.nearestGeofence
+                      ? `Nearest monitored zone: ${geoStatus.nearestGeofence.name} (${geoStatus.nearestGeofence.distanceKm} km away)`
+                      : "Continuous GPS boundary surveillance active. No high-risk perimeters nearby."}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={checkGeofenceSafety}
+                disabled={geoLoading}
+                className="flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-emerald-900 border border-emerald-200 hover:bg-emerald-100 transition shadow-2xs shrink-0 disabled:opacity-50"
+              >
+                <RefreshCw className={`size-3 text-emerald-700 ${geoLoading ? "animate-spin" : ""}`} />
+                <span>Rescan GPS</span>
+              </button>
+            </div>
+          )
+        ) : null}
         {!kyc ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
@@ -356,6 +520,25 @@ export default function DashboardPage() {
                 <h3 className="text-base font-bold text-slate-900">Offline Verification Mode</h3>
                 <p className="text-xs text-slate-500 mt-1">
                   Local cryptographic enclave cache and offline Code 128 barcode validation in remote areas.
+                </p>
+              </div>
+            </Link>
+
+            {/* Tourist Grievance & Scam Desk */}
+            <Link
+              href="/dashboard/complaints"
+              className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-amber-300 transition-all space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex size-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600 group-hover:scale-110 transition-transform">
+                  <Scale className="size-6" />
+                </div>
+                <ArrowRight className="size-4 text-slate-400 group-hover:text-amber-600 transition-colors" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Grievance &amp; Scam Desk</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Report fare gouging, fake guides, or hotel booking fraud with AI triage and direct police dispatch.
                 </p>
               </div>
             </Link>

@@ -29,6 +29,8 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle2,
+  ShieldAlert,
+  Scale,
 } from "lucide-react";
 import { useAuth } from "../lib/auth-context";
 
@@ -176,6 +178,13 @@ export function Header() {
       title: "Consent & Privacy Hub",
       desc: "Selective data disclosure controls & audit trails",
       icon: <Lock className="size-4 text-emerald-600" />,
+    },
+    {
+      href: "/dashboard/complaints",
+      title: "Grievance & Scam Desk",
+      desc: "Report taxi extortion, fake guides & hotel fraud with AI triage",
+      icon: <ShieldAlert className="size-4 text-rose-600" />,
+      badge: "Police Triage",
     },
   ];
 
@@ -557,6 +566,18 @@ export function Header() {
                 >
                   <Siren className="size-4 animate-pulse text-red-500" />
                   <span>Emergency SOS</span>
+                </Link>
+
+                {/* Direct Link 3: Grievance & Scam Desk */}
+                <Link
+                  href="/dashboard/complaints"
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${isActive("/dashboard/complaints")
+                      ? "bg-amber-50 text-amber-800 font-bold"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                >
+                  <Scale className="size-4 text-amber-600" />
+                  <span>Grievances</span>
                 </Link>
               </>
             )}

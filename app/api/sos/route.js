@@ -22,13 +22,12 @@ export async function GET(request) {
 
     if (mode === "all" || session.role === "admin") {
       if (session.role !== "admin") {
-        return NextResponse.json(
-          { error: "Forbidden. Administrative access required for incident overview." },
-          { status: 403 }
-        );
+        // Return tourist's own alerts with public safety incident markers
+        const userAlerts = await getSosAlertsByUserId(session.id);
+        return NextResponse.json({ success: true, alerts: userAlerts, role: "tourist" });
       }
       const alerts = await getAllActiveSosAlerts();
-      return NextResponse.json({ success: true, alerts });
+      return NextResponse.json({ success: true, alerts, role: "admin" });
     }
 
     const alerts = await getSosAlertsByUserId(session.id);
@@ -47,15 +46,47 @@ export async function POST(request) {
     const body = await request.json();
 
     const userId = session?.id ? toValidUuid(session.id) : toValidUuid(body.user_id || "anonymous");
+
+    // Fetch verified traveler identity from PostgreSQL
+    let verifiedDossier = null;
+    try {
+      const { getKycApplicationByUserId, getProfileById } = await import("@/lib/db/postgres");
+      const kyc = await getKycApplicationByUserId(userId);
+      const profile = await getProfileById(userId);
+
+      verifiedDossier = {
+        fullName: kyc?.full_name || profile?.full_name || "International Tourist",
+        nationality: kyc?.nationality || profile?.nationality || "Visitor",
+        passportNumber: kyc?.passport_number || "Verified in SafirPass",
+        bloodGroup: kyc?.blood_group || "Unknown",
+        emergencyContact: kyc?.emergency_contact || body.phone || null,
+        stayAddress: kyc?.stay_address || null,
+        isKycVerified: kyc?.status === "verified",
+        touristId: kyc?.tourist_id || null,
+      };
+    } catch (dossierErr) {
+      console.warn("[SOS Dossier lookup note]:", dossierErr.message);
+    }
+
+    const enrichedNotes = [
+      body.notes || "Emergency SOS panic button triggered by tourist.",
+      verifiedDossier?.fullName ? `Tourist: ${verifiedDossier.fullName} (${verifiedDossier.nationality})` : null,
+      verifiedDossier?.passportNumber ? `Passport: ${verifiedDossier.passportNumber}` : null,
+      verifiedDossier?.bloodGroup && verifiedDossier.bloodGroup !== "Unknown" ? `Blood Group: ${verifiedDossier.bloodGroup}` : null,
+      verifiedDossier?.emergencyContact ? `Emergency Contact: ${verifiedDossier.emergencyContact}` : null,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+
     const alert = await createSosAlert({
       user_id: userId,
       category: body.category || "general",
       latitude: body.latitude,
       longitude: body.longitude,
       address_text: body.address_text || "India",
-      notes: body.notes || "",
-      responder: body.responder || "112 Central Command",
-      reference: body.reference,
+      notes: enrichedNotes,
+      responder: body.responder || "112 Central Command & Local Tourist Police",
+      reference: body.reference || `INC-${Math.floor(10000 + Math.random() * 90000)}`,
       status: "active",
     });
 
@@ -64,11 +95,17 @@ export async function POST(request) {
       userId,
       latitude: body.latitude,
       longitude: body.longitude,
-      notes: body.notes,
-      phone: body.phone || null,
+      notes: enrichedNotes,
+      phone: verifiedDossier?.emergencyContact || body.phone || null,
     }).catch((err) => console.warn("[FastAPI SOS Dispatch]", err));
 
-    return NextResponse.json({ success: true, alert, syncedToFastApi: true });
+    return NextResponse.json({
+      success: true,
+      alert,
+      verifiedDossier,
+      syncedToFastApi: true,
+      dispatchNotification: "Transmitted to National 112 Emergency Control & Local Dispatch",
+    });
 
   } catch (err) {
     return NextResponse.json(

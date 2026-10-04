@@ -111,45 +111,7 @@ export default function SosPanicPage() {
 
   useEffect(() => () => stopHold(), []);
 
-  if (!isVerified) {
-    return (
-      <div className="min-h-screen bg-slate-50 py-16 px-4">
-        <div className="container-page max-w-xl space-y-6 text-center">
-          <div className="rounded-3xl border-2 border-amber-300 bg-white p-10 shadow-xl space-y-6">
-            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-amber-100 text-amber-800">
-              <Siren className="size-8" />
-            </div>
-            <div className="space-y-2">
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
-                Authority Verification Required
-              </span>
-              <h1 className="font-serif text-2xl font-bold text-slate-900">
-                SOS Emergency Dispatch is Locked
-              </h1>
-              <p className="text-sm text-slate-600">
-                To route high-priority emergency telemetry to National 112 control units, your digital identity must be verified by the Government Authority.
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <a
-                href="/dashboard/verify"
-                className="rounded-xl bg-blue-600 px-6 py-3 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition-colors"
-              >
-                Go to e-KYC Verification
-              </a>
-              <a
-                href="/dashboard"
-                className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50"
-              >
-                Back to Dashboard
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => () => stopHold(), []);
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
@@ -157,15 +119,51 @@ export default function SosPanicPage() {
 
         {/* Header */}
         <div className="rounded-2xl border border-red-200 bg-red-50 p-6 md:p-8 space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-red-700 flex items-center gap-1.5">
-            <Siren className="size-4 animate-pulse" /> Part 6 Emergency SOS Grid
-          </span>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-red-700 flex items-center gap-1.5">
+              <Siren className="size-4 animate-pulse" /> Part 6 Emergency SOS Grid &amp; National 112 Link
+            </span>
+            {isVerified ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-300">
+                <CheckCircle2 className="size-3.5 text-emerald-600" />
+                <span>Verified Digital Identity Attached</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-300">
+                <AlertTriangle className="size-3.5 text-amber-600" />
+                <span>e-KYC Pending • Basic GPS SOS Active</span>
+              </span>
+            )}
+          </div>
+
           <h1 className="font-serif text-3xl font-extrabold text-slate-900">
             One-Touch Emergency SOS Panic Trigger
           </h1>
           <p className="text-sm text-slate-700">
-            Press and hold the red SOS button for 3 seconds. Your GPS telemetry, medical indicators, and identity token are locked and recorded on Neon Postgres.
+            Press and hold the red SOS button for 3 seconds. Your GPS telemetry, medical indicators, and verified identity dossier will be locked and transmitted to the National 112 Emergency Control Unit and local police.
           </p>
+
+          {/* Verified Dossier Preview Card */}
+          {kyc && (
+            <div className="mt-3 pt-3 border-t border-red-200/80 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+              <div className="bg-white/80 rounded-xl p-2.5 border border-red-100">
+                <span className="text-[10px] font-bold uppercase text-slate-500 block">Traveler</span>
+                <strong className="text-slate-900 truncate block">{kyc.full_name || user?.name || "Registered Tourist"}</strong>
+              </div>
+              <div className="bg-white/80 rounded-xl p-2.5 border border-red-100">
+                <span className="text-[10px] font-bold uppercase text-slate-500 block">Passport Number</span>
+                <strong className="text-slate-900 font-mono block">{kyc.passport_number || "e-KYC In Progress"}</strong>
+              </div>
+              <div className="bg-white/80 rounded-xl p-2.5 border border-red-100">
+                <span className="text-[10px] font-bold uppercase text-slate-500 block">Blood Group</span>
+                <strong className="text-red-700 font-bold block">{kyc.blood_group || "Not Provided"}</strong>
+              </div>
+              <div className="bg-white/80 rounded-xl p-2.5 border border-red-100">
+                <span className="text-[10px] font-bold uppercase text-slate-500 block">Emergency Contact</span>
+                <strong className="text-slate-900 truncate block">{kyc.emergency_contact || "112 Central"}</strong>
+              </div>
+            </div>
+          )}
         </div>
 
         {errorMsg && (

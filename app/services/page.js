@@ -57,18 +57,29 @@ export default function ServicesPage() {
     <div className="bg-white py-16 md:py-24">
       <div className="container-page space-y-16">
         {/* Header */}
-        <div className="max-w-3xl space-y-4">
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
-            Universal Ecosystem
-          </span>
-          <h1 className="font-serif text-4xl font-extrabold text-slate-900 sm:text-5xl">
-            Verify Once, Use Across Trusted Services
-          </h1>
-          <p className="text-lg text-slate-600 leading-relaxed">
-            SafirPass seamlessly integrates with public and private service
-            providers across India, eliminating redundant paperwork for
-            international travellers.
-          </p>
+        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 max-w-5xl">
+          <div className="space-y-4 max-w-2xl">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
+              Universal Ecosystem
+            </span>
+            <h1 className="font-serif text-4xl font-extrabold text-slate-900 sm:text-5xl">
+              Verify Once, Use Across Trusted Services
+            </h1>
+            <p className="text-lg text-slate-600 leading-relaxed">
+              SafirPass seamlessly integrates with public and private service
+              providers across India, eliminating redundant paperwork for
+              international travellers.
+            </p>
+          </div>
+
+          <Link
+            href="/services/verify"
+            className="flex items-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 text-sm font-bold shadow-lg transition-all shrink-0"
+          >
+            <ShieldCheck className="size-5" />
+            <span>Launch Form-C Terminal</span>
+            <ArrowRight className="size-4" />
+          </Link>
         </div>
 
         {/* Hero image */}
@@ -128,10 +139,11 @@ export default function ServicesPage() {
             </p>
           </div>
           <Link
-            href="/auth"
-            className="rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg hover:bg-blue-500 transition-colors shrink-0"
+            href="/services/verify"
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg hover:bg-blue-500 transition-colors shrink-0"
           >
-            Partner Integration Access
+            <span>Open Provider Terminal</span>
+            <ArrowRight className="size-4" />
           </Link>
         </div>
       </div>

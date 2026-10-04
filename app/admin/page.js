@@ -73,6 +73,11 @@ export default function AdminPortalPage() {
   const [rotationAngle, setRotationAngle] = useState(0);
   const [highContrast, setHighContrast] = useState(false);
 
+  // ICAO 9303 Optical MRZ & Anti-Counterfeit State
+  const [mrzAnalysis, setMrzAnalysis] = useState(null);
+  const [analyzingMrz, setAnalyzingMrz] = useState(false);
+  const [mrzError, setMrzError] = useState("");
+
   const loadData = useCallback(async (isManual = false) => {
     try {
       if (isManual) setRefreshing(true);
@@ -143,6 +148,8 @@ export default function AdminPortalPage() {
     setSelectedApp(app);
     setDecisionNotes(app.admin_notes || "");
     setActionSuccessMsg("");
+    setMrzAnalysis(app.mrz_analysis || app.ocr_data || null);
+    setMrzError("");
 
     const initialDecisions = {};
     if (Array.isArray(app.documents)) {
@@ -154,6 +161,38 @@ export default function AdminPortalPage() {
       });
     }
     setDocDecisions(initialDecisions);
+  };
+
+  const runMrzInspection = async (passportDoc) => {
+    if (!passportDoc) return;
+    setAnalyzingMrz(true);
+    setMrzError("");
+    try {
+      const payload = {};
+      if (passportDoc.data_url || passportDoc.imageBase64) {
+        payload.imageBase64 = passportDoc.data_url || passportDoc.imageBase64;
+      } else if (passportDoc.url || passportDoc.secure_url) {
+        payload.imageUrl = passportDoc.url || passportDoc.secure_url;
+      } else {
+        throw new Error("No image data available for optical MRZ analysis");
+      }
+
+      const res = await fetch("/api/kyc/ocr-mrz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "ICAO 9303 analysis did not detect readable MRZ");
+      }
+      setMrzAnalysis(data);
+    } catch (err) {
+      setMrzError(err.message || "Failed to analyze document optical MRZ");
+    } finally {
+      setAnalyzingMrz(false);
+    }
   };
 
   const handleDocDecisionChange = (docType, status, reason = "") => {
@@ -962,6 +1001,108 @@ export default function AdminPortalPage() {
                 </div>
               </div>
             </div>
+
+            {/* ICAO 9303 Optical MRZ & Anti-Counterfeit Verification Card */}
+            {(() => {
+              const passportDoc = selectedDocs.find(
+                (d) => d.doc_type === "passport" || d.doc_type === "passport_front"
+              );
+              return (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                        <FileCheck className="size-4 text-blue-600" /> ICAO 9303 Optical Security &amp; Counterfeit Evaluation
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        7-3-1 weight check-digit validation, optical TD3/TD1 parser, and anti-forgery risk engine.
+                      </p>
+                    </div>
+
+                    {passportDoc && (
+                      <button
+                        type="button"
+                        onClick={() => runMrzInspection(passportDoc)}
+                        disabled={analyzingMrz}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3.5 py-2 shadow-xs transition-colors shrink-0 disabled:opacity-50 cursor-pointer"
+                      >
+                        <RefreshCw className={`size-3.5 ${analyzingMrz ? "animate-spin" : ""}`} />
+                        <span>{analyzingMrz ? "Analyzing Optical MRZ..." : "Run ICAO 9303 Optical Scan"}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {mrzError && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex items-center gap-2">
+                      <AlertTriangle className="size-4 text-amber-600 shrink-0" />
+                      <span>{mrzError}</span>
+                    </div>
+                  )}
+
+                  {mrzAnalysis ? (
+                    <div className="rounded-xl border border-emerald-300 bg-white p-4 space-y-3 shadow-2xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px] px-2.5 py-0.5 border border-emerald-300 uppercase">
+                            {mrzAnalysis.counterfeitRisk || "LOW COUNTERFEIT RISK"}
+                          </span>
+                          <span className="text-xs text-slate-600 font-semibold">
+                            Format: {mrzAnalysis.format || "TD3 (Passport)"}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400">
+                          Engine: {mrzAnalysis.engine || "AWS Rekognition & SafirPass MRZ Parser"}
+                        </span>
+                      </div>
+
+                      {/* Check Digits Table */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div className="rounded-lg bg-slate-50 p-2 border border-slate-200">
+                          <span className="text-[10px] font-semibold text-slate-500 uppercase block">Doc Number</span>
+                          <span className="font-bold text-emerald-700">
+                            {mrzAnalysis.check_digits?.document_number?.valid !== false ? "PASS (7-3-1)" : "MISMATCH"}
+                          </span>
+                        </div>
+                        <div className="rounded-lg bg-slate-50 p-2 border border-slate-200">
+                          <span className="text-[10px] font-semibold text-slate-500 uppercase block">Birth Date</span>
+                          <span className="font-bold text-emerald-700">
+                            {mrzAnalysis.check_digits?.birth_date?.valid !== false ? "PASS (7-3-1)" : "MISMATCH"}
+                          </span>
+                        </div>
+                        <div className="rounded-lg bg-slate-50 p-2 border border-slate-200">
+                          <span className="text-[10px] font-semibold text-slate-500 uppercase block">Expiry Date</span>
+                          <span className="font-bold text-emerald-700">
+                            {mrzAnalysis.check_digits?.expiry_date?.valid !== false ? "PASS (7-3-1)" : "MISMATCH"}
+                          </span>
+                        </div>
+                        <div className="rounded-lg bg-slate-50 p-2 border border-slate-200">
+                          <span className="text-[10px] font-semibold text-slate-500 uppercase block">Composite</span>
+                          <span className="font-bold text-emerald-700">
+                            {mrzAnalysis.check_digits?.composite?.valid !== false ? "PASS (7-3-1)" : "MISMATCH"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Raw OCR Lines */}
+                      {Array.isArray(mrzAnalysis.raw_lines) && mrzAnalysis.raw_lines.length > 0 && (
+                        <div className="rounded-lg bg-slate-950 p-3 font-mono text-[11px] text-emerald-400 space-y-1">
+                          <span className="text-[9px] uppercase tracking-wider text-slate-400 block font-sans font-bold">
+                            ICAO 9303 Optical MRZ Readout:
+                          </span>
+                          {mrzAnalysis.raw_lines.map((line, lidx) => (
+                            <div key={lidx} className="tracking-widest">{line}</div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : !mrzError ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-white p-4 text-center text-xs text-slate-500">
+                      Click "Run ICAO 9303 Optical Scan" to extract MRZ check digits and evaluate counterfeit risk.
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })()}
 
             {/* Uploaded Documents Gallery & Individual Verification Checks */}
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-4">

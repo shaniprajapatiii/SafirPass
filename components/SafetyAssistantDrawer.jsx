@@ -14,6 +14,9 @@ import {
   Siren,
   Globe,
   CheckCircle2,
+  MapPin,
+  Radar,
+  PhoneCall,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -22,6 +25,8 @@ const LANGUAGES = [
   { code: "hi", label: "हिन्दी" },
   { code: "es", label: "Español" },
   { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "ja", label: "日本語" },
 ];
 
 const SUGGESTIONS = {
@@ -103,7 +108,10 @@ export default function SafetyAssistantDrawer() {
         {
           role: "assistant",
           text: data.response || data.message || "Safety advisory received.",
-          intent: data.intent,
+          intent: data.intent || "general_safety",
+          actionSteps: data.actionSteps || null,
+          emergencyNumbers: data.emergencyNumbers || null,
+          provider: data.provider || "Gemini AI Safety Desk",
         },
       ]);
     } catch (err) {
@@ -111,13 +119,86 @@ export default function SafetyAssistantDrawer() {
         ...prev,
         {
           role: "assistant",
-          text: `Notice: ${err.message || "Could not connect to FastAPI safety service."} If you are in immediate danger, please dial 112 directly.`,
+          text: `Notice: ${err.message || "Could not reach assistant."} If you are in immediate danger, please dial 112 directly.`,
           intent: "emergency",
         },
       ]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCheckCurrentArea = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: "Geolocation is not supported by your browser. Please ensure location permissions are enabled.",
+        },
+      ]);
+      return;
+    }
+
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch("/api/geofences/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            }),
+          });
+          const geoData = await res.json();
+          if (geoData.success) {
+            let advisoryText = "";
+            if (geoData.insideGeofence && geoData.activeAlert) {
+              advisoryText = `🚨 ACTIVE GEOFENCE ALERT: You are inside ${geoData.activeAlert.geofence.name} (${geoData.activeAlert.level}). ${geoData.activeAlert.message}`;
+            } else if (geoData.activeAlert) {
+              advisoryText = `⚠️ GEOFENCE ADVISORY: ${geoData.activeAlert.title}. ${geoData.activeAlert.message}`;
+            } else if (geoData.nearestGeofence) {
+              advisoryText = `✅ AREA STATUS: SAFE. Nearest monitored tourist security zone is "${geoData.nearestGeofence.name}", located ${geoData.nearestGeofence.distanceKm} km away.`;
+            } else {
+              advisoryText = `✅ AREA STATUS: All clear. No restricted perimeters or active scam hotspots detected near your coordinates.`;
+            }
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                text: advisoryText,
+                intent: geoData.insideGeofence ? "emergency" : "general_safety",
+                provider: "GPS Geofence Radar",
+                geofenceData: geoData,
+              },
+            ]);
+          }
+        } catch (e) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              text: `Could not verify geofence radar: ${e.message}`,
+            },
+          ]);
+        } finally {
+          setLoading(false);
+        }
+      },
+      (err) => {
+        setLoading(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: `GPS Access Notice: ${err.message}. Please allow location access to receive dynamic safety alerts.`,
+          },
+        ]);
+      }
+    );
   };
 
   const currentSuggestions = SUGGESTIONS[language] || SUGGESTIONS.en;
@@ -159,8 +240,8 @@ export default function SafetyAssistantDrawer() {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold text-white">SafirPass Assistant</h3>
-                  <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-medium text-emerald-300 ring-1 ring-emerald-500/30">
-                    FastAPI
+                  <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-medium text-emerald-300 ring-1 ring-emerald-500/30 flex items-center gap-1">
+                    <Sparkles className="size-2.5" /> Gemini AI
                   </span>
                 </div>
                 <p className="text-xs text-slate-400">Multilingual Emergency Guidance</p>
@@ -209,7 +290,7 @@ export default function SafetyAssistantDrawer() {
                 )}
 
                 <div
-                  className={`max-w-[82%] rounded-2xl p-3.5 leading-relaxed ${
+                  className={`max-w-[85%] rounded-2xl p-3.5 leading-relaxed space-y-2 ${
                     m.role === "user"
                       ? "bg-blue-600 text-white shadow-sm"
                       : m.intent === "emergency"
@@ -217,11 +298,41 @@ export default function SafetyAssistantDrawer() {
                       : "border border-slate-100 bg-slate-50 text-slate-800"
                   }`}
                 >
-                  <p>{m.text}</p>
+                  <p className="whitespace-pre-line">{m.text}</p>
+
+                  {/* Immediate Action Steps */}
+                  {m.actionSteps && Array.isArray(m.actionSteps) && (
+                    <div className="rounded-xl bg-white/80 p-2.5 border border-slate-200/70 text-[11px] space-y-1">
+                      <span className="font-bold text-slate-900 block">Recommended Action Steps:</span>
+                      <ul className="list-disc list-inside space-y-0.5 text-slate-700">
+                        {m.actionSteps.map((step, sIdx) => (
+                          <li key={sIdx}>{step}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Context Emergency Numbers */}
+                  {m.emergencyNumbers && Array.isArray(m.emergencyNumbers) && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {m.emergencyNumbers.map((num, nIdx) => (
+                        <span key={nIdx} className="rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800">
+                          {num}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Provider Attribution Tag */}
+                  {m.provider && (
+                    <span className="text-[9px] text-slate-400 block pt-0.5">
+                      Verified by {m.provider}
+                    </span>
+                  )}
 
                   {/* Quick Shortcut when Emergency Intent is Detected */}
                   {m.intent === "emergency" && (
-                    <div className="mt-3 pt-2 border-t border-red-200 flex items-center gap-2">
+                    <div className="pt-2 border-t border-red-200 flex flex-wrap items-center gap-2">
                       <Link
                         href="/dashboard/sos"
                         className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-red-700 shadow-sm"
@@ -232,7 +343,7 @@ export default function SafetyAssistantDrawer() {
                         href="tel:112"
                         className="inline-flex items-center gap-1 rounded-lg border border-red-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-red-700 hover:bg-red-50"
                       >
-                        Call 112
+                        <PhoneCall className="size-3" /> Call 112
                       </a>
                     </div>
                   )}
@@ -249,17 +360,28 @@ export default function SafetyAssistantDrawer() {
             {loading && (
               <div className="flex items-center gap-2 text-slate-500 py-2">
                 <Loader2 className="size-4 animate-spin text-blue-600" />
-                <span className="text-xs">Analyzing safety query...</span>
+                <span className="text-xs">Consulting Safety Assistant &amp; Geofences...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Suggestions */}
-          <div className="border-t border-slate-100 bg-slate-50/50 p-2.5">
-            <p className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              Suggested Safety Prompts:
-            </p>
+          {/* Quick Suggestions & GPS Geofence Radar */}
+          <div className="border-t border-slate-100 bg-slate-50/50 p-2.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="px-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Safety Guidance:
+              </p>
+              <button
+                type="button"
+                onClick={handleCheckCurrentArea}
+                disabled={loading}
+                className="inline-flex items-center gap-1 rounded-full border border-blue-300 bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold text-blue-700 hover:bg-blue-100 transition shadow-2xs disabled:opacity-50"
+              >
+                <Radar className="size-3 text-blue-600 animate-spin" />
+                <span>Radar Scan My Location</span>
+              </button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {currentSuggestions.map((s, idx) => (
                 <button
